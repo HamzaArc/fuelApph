@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MOCK_STATIONS } from '../constants';
 import { FuelType, Station } from '../types';
+import { fetchStationsInBounds } from '../services/placesService';
 
 interface MapExplorerProps {
   onStationSelect: (station: Station) => void;
@@ -28,6 +29,16 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
   const [isDroppingPin, setIsDroppingPin] = useState(false);
   const [mapCenter, setMapCenter] = useState<L.LatLng>(new L.LatLng(33.5890, -7.6310));
   const [touchStart, setTouchStart] = useState(0);
+  
+  const [isRouteMode, setIsRouteMode] = useState(false);
+  const [destination, setDestination] = useState('');
+  
+  // Ghost Station State
+  const [dynamicStations, setDynamicStations] = useState<Station[]>([]);
+  const [isLoadingArea, setIsLoadingArea] = useState(false);
+
+  // If user moves map far away, we simulate an area where our DB is empty
+  const isUnchartedArea = Math.abs(mapCenter.lat - 33.5890) > 0.05 || Math.abs(mapCenter.lng - -7.6310) > 0.05;
 
   const fuelTypes: { id: FuelType; label: string }[] = [
     { id: 'Diesel', label: 'Diesel' },
@@ -35,12 +46,38 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
     { id: 'Premium', label: 'Premium' }
   ];
 
-  const cheapestNearby = useMemo(() => {
-    return [...MOCK_STATIONS].sort((a, b) => (a.prices[activeFuel] || 99) - (b.prices[activeFuel] || 99))[0];
-  }, [activeFuel]);
+  // Smart Data Fetching Logic (Triggers when map moves)
+  useEffect(() => {
+    const loadArea = async () => {
+      setIsLoadingArea(true);
+      if (isUnchartedArea) {
+        // Fetch from our "Google Places" proxy service
+        const googleImportedStations = await fetchStationsInBounds(
+          { lat: mapCenter.lat, lng: mapCenter.lng }, 
+          isUnchartedArea
+        );
+        setDynamicStations(googleImportedStations);
+      } else {
+        setDynamicStations([]);
+      }
+      setIsLoadingArea(false);
+    };
 
-  const openNavigation = (lat: number, lng: number) => {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=$${lat},${lng}`, '_blank');
+    const debounceTimer = setTimeout(loadArea, 500); // Debounce map panning
+    return () => clearTimeout(debounceTimer);
+  }, [mapCenter, isUnchartedArea]);
+
+  const displayedStations = isUnchartedArea ? dynamicStations : MOCK_STATIONS;
+
+  // We only consider real stations for the "Cheapest Nearby" card
+  const cheapestNearby = useMemo(() => {
+    const realStations = displayedStations.filter(s => !s.isGhost && s.prices[activeFuel]);
+    if (realStations.length === 0) return null;
+    return [...realStations].sort((a, b) => (a.prices[activeFuel] || 99) - (b.prices[activeFuel] || 99))[0];
+  }, [activeFuel, displayedStations]);
+
+  const openWaze = (lat: number, lng: number) => {
+    window.open(`waze://?ll=${lat},${lng}&navigate=yes`, '_blank');
   };
 
   const confirmPinDrop = () => {
@@ -48,19 +85,33 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
     onAddStationInitiated({ lat: mapCenter.lat, lng: mapCenter.lng });
   };
 
-  // Swipe logic for bottom card
   const handleCardTouchStart = (e: React.TouchEvent) => setTouchStart(e.touches[0].clientY);
   const handleCardTouchEnd = (e: React.TouchEvent) => {
     const delta = e.changedTouches[0].clientY - touchStart;
-    if (delta < -30) setIsBottomCardExpanded(true); // Swipe Up
-    if (delta > 30) setIsBottomCardExpanded(false); // Swipe Down
+    if (delta < -30) setIsBottomCardExpanded(true); 
+    if (delta > 30) setIsBottomCardExpanded(false); 
   };
 
-  const createCustomIcon = (station: Station) => {
+  const createCustomIcon = useCallback((station: Station) => {
+    if (station.isGhost) {
+      // GHOST PIN UI: Gray, transparent, pulsing ring, asking for price
+      const iconHTML = renderToStaticMarkup(
+        <div className="relative flex flex-col items-center group">
+          <div className="absolute inset-0 bg-slate-500/20 rounded-full blur-md animate-pulse-slow scale-150"></div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl shadow-lg border border-slate-500/50 bg-surface-darker/80 backdrop-blur-sm text-slate-400 z-10">
+            <span className="material-symbols-outlined text-[14px]">add_a_photo</span>
+            <span className="text-[10px] font-black tracking-widest uppercase">Add Price</span>
+          </div>
+          <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-slate-600/80 -mt-[1px]" />
+        </div>
+      );
+      return L.divIcon({ html: iconHTML, className: 'custom-modern-pin', iconSize: [90, 40], iconAnchor: [45, 40] });
+    }
+
     const price = station.prices[activeFuel];
     if (!price) return null;
 
-    const allPrices = MOCK_STATIONS.map(s => s.prices[activeFuel]).filter(Boolean) as number[];
+    const allPrices = displayedStations.filter(s => !s.isGhost).map(s => s.prices[activeFuel]).filter(Boolean) as number[];
     const isCheapest = price === Math.min(...allPrices);
 
     const brandColors: Record<string, string> = {
@@ -81,26 +132,60 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
     );
 
     return L.divIcon({ html: iconHTML, className: 'custom-modern-pin', iconSize: [70, 40], iconAnchor: [35, 40] });
-  };
+  }, [activeFuel, displayedStations]);
 
   return (
     <div className="relative h-full w-full bg-background-dark select-none overflow-hidden">
       
-      {/* Top HUD */}
+      {/* Top HUD with Loading Indicator */}
       {!isDroppingPin && (
         <div className="absolute top-0 left-0 right-0 z-[1000] p-4 pt-6 space-y-2 pointer-events-none animate-fadeIn">
           <div className="flex items-center gap-2 pointer-events-auto">
-            <div className="flex-1 h-12 bg-surface-darker/90 backdrop-blur-xl rounded-2xl flex items-center px-4 gap-2 shadow-2xl border border-white/5 ring-1 ring-white/10">
-              <span className="material-symbols-outlined text-primary text-[20px]">search</span>
-              <input type="text" placeholder="Search station..." className="bg-transparent border-none outline-none flex-1 text-xs font-bold text-white placeholder:text-slate-500 focus:ring-0" />
-              <div className="flex items-center gap-1">
-                <button onClick={onViewList} className="size-8 bg-white/5 text-primary rounded-xl flex items-center justify-center hover:bg-white/10 active:scale-90 transition-all">
-                  <span className="material-symbols-outlined text-lg">list</span>
-                </button>
+            <div className="flex-1 bg-surface-darker/90 backdrop-blur-xl rounded-2xl flex flex-col px-4 py-2 shadow-2xl border border-white/5 ring-1 ring-white/10 transition-all">
+              
+              <div className="flex items-center gap-2 h-10">
+                <span className="material-symbols-outlined text-primary text-[20px]">
+                  {isRouteMode ? 'my_location' : 'search'}
+                </span>
+                <input 
+                  type="text" 
+                  placeholder={isRouteMode ? "Start: Current Location" : "Search station or area..."} 
+                  disabled={isRouteMode}
+                  className="bg-transparent border-none outline-none flex-1 text-xs font-bold text-white placeholder:text-slate-500 focus:ring-0 truncate disabled:opacity-50" 
+                />
+                
+                {isLoadingArea && (
+                  <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                )}
+
+                {!isRouteMode && !isLoadingArea && (
+                  <button onClick={() => setIsRouteMode(true)} className="px-2 py-1 bg-primary/10 text-primary rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">route</span> Route
+                  </button>
+                )}
+                {isRouteMode && (
+                  <button onClick={() => setIsRouteMode(false)} className="text-slate-400">
+                    <span className="material-symbols-outlined text-lg">close</span>
+                  </button>
+                )}
               </div>
+
+              {isRouteMode && (
+                <div className="flex items-center gap-2 h-10 border-t border-white/10 mt-1 pt-1 animate-slide-up">
+                  <span className="material-symbols-outlined text-red-500 text-[20px]">location_on</span>
+                  <input 
+                    type="text" 
+                    placeholder="Where are you going?" 
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                    className="bg-transparent border-none outline-none flex-1 text-xs font-bold text-white placeholder:text-slate-500 focus:ring-0" 
+                  />
+                </div>
+              )}
             </div>
           </div>
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5 pointer-events-auto">
+          
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5 pointer-events-auto mt-2">
             {fuelTypes.map(ft => (
               <button key={ft.id} onClick={() => setActiveFuel(ft.id)} className={`flex-shrink-0 h-8 px-5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all duration-300 border ${activeFuel === ft.id ? 'bg-primary text-background-dark border-primary shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-surface-darker/80 backdrop-blur-md text-slate-400 border-white/5'}`}>
                 {ft.label}
@@ -122,12 +207,12 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
         </div>
       )}
 
-      {/* Map */}
+      {/* Map Layer */}
       <div className="absolute inset-0 z-0">
         <MapContainer center={[33.5890, -7.6310]} zoom={14} zoomControl={false} className="h-full w-full">
           <TileLayer attribution='© CARTO' url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
           <CenterTracker onCenterChange={setMapCenter} />
-          {!isDroppingPin && MOCK_STATIONS.map(station => {
+          {!isDroppingPin && displayedStations.map(station => {
             const icon = createCustomIcon(station);
             if (!icon) return null;
             return <Marker key={station.id} position={[station.location.lat, station.location.lng]} icon={icon} eventHandlers={{ click: () => onStationSelect(station) }} />;
@@ -135,7 +220,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
         </MapContainer>
       </div>
 
-      {/* Drop Pin Layer */}
+      {/* Drop Pin UI */}
       {isDroppingPin && (
         <div className="absolute inset-0 z-[2000] pointer-events-none flex flex-col items-center justify-center animate-fadeIn">
           <div className="bg-background-dark/80 backdrop-blur-sm text-white px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-4 shadow-lg border border-white/10">
@@ -159,7 +244,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
       )}
 
       {/* Swipeable Bottom Card */}
-      {!hideBottomCard && !isDroppingPin && (
+      {!hideBottomCard && !isDroppingPin && cheapestNearby && (
         <div className="absolute bottom-4 left-4 right-4 z-[1000] pointer-events-none animate-slide-up">
           <div 
             onTouchStart={handleCardTouchStart}
@@ -181,7 +266,9 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
                     <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>stars</span>
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Cheapest Nearby</p>
+                    <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">
+                      {isRouteMode ? 'Cheapest on Route' : 'Cheapest Nearby'}
+                    </p>
                     <h3 className="text-base font-black text-white truncate max-w-[160px] leading-tight mt-0.5">{cheapestNearby.name}</h3>
                   </div>
                 </div>
@@ -199,11 +286,14 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
                   <div className="flex items-center justify-around text-[10px] font-black text-slate-400 uppercase tracking-widest">
                     <span className="flex items-center gap-2"><span className="material-symbols-outlined text-primary text-[18px]">near_me</span> {cheapestNearby.distance}</span>
                     <span className="flex items-center gap-2"><span className="material-symbols-outlined text-primary text-[18px]">timer</span> 4 MINS</span>
-                    <span className="flex items-center gap-2"><span className="material-symbols-outlined text-primary text-[18px]">verified</span> 15M AGO</span>
+                    <span className="flex items-center gap-2">
+                      <span className={`material-symbols-outlined text-[18px] ${Date.now() - cheapestNearby.lastUpdatedTimestamp > 86400000 ? 'text-slate-500' : 'text-primary'}`}>verified</span> 
+                      {cheapestNearby.lastUpdated.toUpperCase()}
+                    </span>
                   </div>
                   <div className="flex gap-3">
-                    <button onClick={(e) => { e.stopPropagation(); openNavigation(cheapestNearby.location.lat, cheapestNearby.location.lng); }} className="flex-1 h-16 bg-primary text-background-dark rounded-2xl font-black text-sm flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-primary/10">
-                      <span className="material-symbols-outlined text-[24px]">navigation</span> Start Journey
+                    <button onClick={(e) => { e.stopPropagation(); openWaze(cheapestNearby.location.lat, cheapestNearby.location.lng); }} className="flex-1 h-16 bg-blue-500 text-white rounded-2xl font-black text-sm flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-blue-500/20">
+                      <img src="https://cdn.simpleicons.org/waze/ffffff" alt="Waze" className="h-6 w-6" /> Start Journey
                     </button>
                     <button onClick={(e) => { e.stopPropagation(); onStationSelect(cheapestNearby); }} className="size-16 bg-white/5 text-white rounded-2xl flex items-center justify-center active:scale-95 border border-white/5">
                       <span className="material-symbols-outlined text-[24px]">info</span>

@@ -19,7 +19,6 @@ const App: React.FC = () => {
   const [searchView, setSearchView] = useState<'filters' | 'results'>('filters');
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   
-  // Cleaned up view routing
   const [viewMode, setViewMode] = useState<'map' | 'list' | 'manual_report' | 'voice_report' | 'add_station'>('map');
   const [lastViewBeforeReport, setLastViewBeforeReport] = useState<'map'>('map');
   
@@ -48,12 +47,22 @@ const App: React.FC = () => {
 
   const selectStation = (s: Station) => {
     setSelectedStation(s);
-    setViewMode('map'); // Stays on map, but selectedStation triggers the full StationSheet popup
+    setViewMode('map');
   };
 
   if (!hasOnboarded) return <Onboarding onComplete={() => setHasOnboarded(true)} />;
   
-  if (isScanning) return <ScanFlow onCancel={() => setIsScanning(false)} onComplete={(price, type) => finishContribution(selectedStation?.name || 'Unknown', type, price, false)} />;
+  if (isScanning) return (
+    <ScanFlow 
+      onCancel={() => setIsScanning(false)} 
+      onComplete={(price, type) => finishContribution(selectedStation?.name || 'Unknown', type, price, false)} 
+      onFallback={() => {
+        setIsScanning(false);
+        setLastViewBeforeReport('map');
+        setViewMode('manual_report');
+      }}
+    />
+  );
 
   if (showSuccess) {
     return (
@@ -88,7 +97,6 @@ const App: React.FC = () => {
                 }}
               />
               
-              {/* This is now the Full Floating Details Sheet */}
               <StationSheet 
                 station={selectedStation} 
                 onClose={() => setSelectedStation(null)} 

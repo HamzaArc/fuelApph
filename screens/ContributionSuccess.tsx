@@ -10,7 +10,6 @@ export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone
   const [isSpinning, setIsSpinning] = useState(!isPioneer);
   const [displayPoints, setDisplayPoints] = useState(0);
   
-  // FIX: useMemo ensures the random number is generated exactly once, preventing infinite re-renders.
   const targetPoints = useMemo(() => {
     return isPioneer ? 200 : Math.floor(Math.random() * 481) + 20;
   }, [isPioneer]);
@@ -21,21 +20,30 @@ export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone
       return;
     }
 
-    // The Slot Machine Effect
-    const interval = setInterval(() => {
-      setDisplayPoints(Math.floor(Math.random() * 999));
-    }, 50);
+    let startTime: number | null = null;
+    const duration = 2000; // 2 seconds animation
 
-    const timeout = setTimeout(() => {
-      clearInterval(interval);
-      setDisplayPoints(targetPoints);
-      setIsSpinning(false);
-    }, 2500);
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = timestamp - startTime;
+      const percentage = Math.min(progress / duration, 1);
+      
+      // Easing function for smooth slowdown (easeOutQuart)
+      const easeOutQuart = 1 - Math.pow(1 - percentage, 4);
+      
+      setDisplayPoints(Math.floor(easeOutQuart * targetPoints));
 
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
+      if (progress < duration) {
+        requestAnimationFrame(animate);
+      } else {
+        setIsSpinning(false);
+        setDisplayPoints(targetPoints);
+      }
     };
+
+    const rafId = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(rafId);
   }, [isSpinning, targetPoints]);
 
   return (
@@ -60,7 +68,7 @@ export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone
             </p>
           </div>
 
-          {/* THE SLOT MACHINE / REWARD DISPLAY */}
+          {/* THE SMOOTH COUNT-UP REWARD DISPLAY */}
           <div className={`relative flex flex-col items-center justify-center w-full aspect-square max-w-[280px] rounded-[3rem] border-4 transition-all duration-500 shadow-2xl ${
             isSpinning 
               ? 'border-primary/50 bg-surface-darker shadow-[0_0_50px_rgba(59,130,246,0.3)] animate-pulse' 

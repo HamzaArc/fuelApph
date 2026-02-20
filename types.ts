@@ -1,10 +1,9 @@
-
 export type FuelType = 'Diesel' | 'Sans Plomb' | 'Premium';
 
 export interface Station {
   id: string;
   name: string;
-  brand: 'Shell' | 'Afriquia' | 'TotalEnergies' | 'Winxo' | 'Ola Energy' | 'Petrom';
+  brand: 'Shell' | 'Afriquia' | 'TotalEnergies' | 'Winxo' | 'Ola Energy' | 'Petrom' | 'Other';
   location: {
     lat: number;
     lng: number;
@@ -15,11 +14,14 @@ export interface Station {
     [key in FuelType]?: number;
   };
   lastUpdated: string;
+  lastUpdatedTimestamp: number;
   verifiedBy?: string;
+  verifiedByLevel?: number;
   distance: string;
   amenities: string[];
   status: 'Open' | 'Closed';
   trustScore: number;
+  isGhost?: boolean; // True if imported from Google but has no prices yet
 }
 
 export interface User {

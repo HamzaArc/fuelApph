@@ -1,15 +1,13 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { extractFuelPriceFromImage } from '../services/geminiService';
 
 interface ScanFlowProps {
   onComplete: (price: number, type: string) => void;
   onCancel: () => void;
+  onFallback: () => void;
 }
 
-export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel }) => {
+export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel, onFallback }) => {
   const [step, setStep] = useState<'camera' | 'processing' | 'verify'>('camera');
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [extractedData, setExtractedData] = useState<{ price: number; fuelType: string } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -39,12 +37,22 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel }) => {
   const handleCapture = async () => {
     setStep('processing');
     
-    // Simulating capture and OCR processing
-    // In a real app, we'd draw video frame to canvas and get base64
+    // Strict 4-second OCR Timeout Fallback
+    const fallbackTimer = setTimeout(() => {
+      stopCamera();
+      onFallback();
+    }, 4000);
+
+    // Simulated OCR Processing Time (Randomized for realism)
+    const ocrProcessingTime = Math.random() > 0.4 ? 2000 : 5000;
+    
     setTimeout(() => {
-      setExtractedData({ price: 13.45, fuelType: 'Diesel' });
-      setStep('verify');
-    }, 2500);
+      if (ocrProcessingTime <= 4000) {
+        clearTimeout(fallbackTimer);
+        setExtractedData({ price: 13.45, fuelType: 'Diesel' });
+        setStep('verify');
+      }
+    }, ocrProcessingTime);
   };
 
   const adjustPrice = (amount: number) => {
@@ -62,7 +70,6 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel }) => {
         <div className="relative flex-1">
           <video ref={videoRef} autoPlay playsInline className="h-full w-full object-cover" />
           
-          {/* Overlay UI */}
           <div className="absolute inset-0 flex flex-col p-6 pointer-events-none">
             <div className="flex justify-between items-center pointer-events-auto">
               <button onClick={onCancel} className="size-10 bg-black/40 rounded-full flex items-center justify-center text-white">
@@ -78,8 +85,6 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel }) => {
                 <div className="absolute -top-1 -right-1 size-6 border-t-4 border-r-4 border-primary rounded-tr-lg" />
                 <div className="absolute -bottom-1 -left-1 size-6 border-b-4 border-l-4 border-primary rounded-bl-lg" />
                 <div className="absolute -bottom-1 -right-1 size-6 border-b-4 border-r-4 border-primary rounded-br-lg" />
-                
-                {/* Laser Line */}
                 <div className="absolute w-[90%] left-[5%] h-0.5 bg-primary shadow-[0_0_15px_rgba(59,130,246,1)] animate-scan-move" />
               </div>
             </div>
@@ -107,7 +112,7 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel }) => {
             </div>
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Analyzing Data</h2>
-          <p className="text-slate-400">Our AI is extracting prices from the image...</p>
+          <p className="text-slate-400">If glare blocks the view, we'll switch to manual entry...</p>
         </div>
       )}
 
@@ -163,7 +168,6 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel }) => {
                 </button>
               </div>
               
-              {/* Quick Adjustment Pills */}
               <div className="flex justify-center gap-3 mt-8">
                 {[-0.10, -0.05, 0.05, 0.10].map(val => (
                   <button
@@ -187,10 +191,10 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel }) => {
               Looks Good, Submit
             </button>
             <button 
-              onClick={() => setStep('camera')}
+              onClick={onFallback}
               className="w-full py-4 text-slate-500 font-bold hover:text-white transition-colors"
             >
-              Retake Photo
+              Edit Manually
             </button>
           </div>
         </div>

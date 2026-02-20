@@ -1,8 +1,6 @@
-
 import React from 'react';
 import { Station, FuelType, User, Voucher } from './types';
 
-// Fix: Added missing required property 'globalRank' to satisfy the User interface
 export const MOCK_USER: User = {
   id: 'u1',
   name: 'Karim Benali',
@@ -28,12 +26,14 @@ export const MOCK_STATIONS: Station[] = [
     brand: 'Shell',
     location: { lat: 33.5890, lng: -7.6310, address: 'Ave. Hassan II', city: 'Casablanca' },
     prices: { Diesel: 13.45, 'Sans Plomb': 14.90 },
-    lastUpdated: '15 min ago',
+    lastUpdated: '10 min ago',
+    lastUpdatedTimestamp: Date.now() - 600000, // 10 mins ago
     verifiedBy: 'Ahmed',
+    verifiedByLevel: 12, // High trust
     distance: '0.5 km',
     amenities: ['Café', 'Shop', 'Air', 'WC'],
     status: 'Open',
-    trustScore: 94
+    trustScore: 98
   },
   {
     id: 's2',
@@ -42,7 +42,9 @@ export const MOCK_STATIONS: Station[] = [
     location: { lat: 33.5800, lng: -7.6350, address: "Bd. Al Massira", city: 'Casablanca' },
     prices: { Diesel: 13.40, 'Sans Plomb': 14.85 },
     lastUpdated: '2h ago',
+    lastUpdatedTimestamp: Date.now() - 7200000, // 2 hours ago
     verifiedBy: 'Sami',
+    verifiedByLevel: 5,
     distance: '1.2 km',
     amenities: ['Mosque', 'Café', 'ATM'],
     status: 'Open',
@@ -54,13 +56,22 @@ export const MOCK_STATIONS: Station[] = [
     brand: 'TotalEnergies',
     location: { lat: 33.5750, lng: -7.6450, address: 'Bd. Ghandi', city: 'Casablanca' },
     prices: { Diesel: 13.52, 'Sans Plomb': 14.98 },
-    lastUpdated: '1h ago',
+    lastUpdated: '3 days ago',
+    lastUpdatedTimestamp: Date.now() - 259200000, // 3 days ago (Stale)
     verifiedBy: 'Layla',
+    verifiedByLevel: 1, // Low trust
     distance: '2.4 km',
     amenities: ['Car Wash', 'Shop', 'EV Charge'],
     status: 'Open',
-    trustScore: 92
+    trustScore: 45
   }
+];
+
+export const MOCK_LOCAL_LEADERBOARD = [
+  { id: 'u1', name: 'Karim B. (You)', level: 12, points: 2450, city: 'Maarif', img: 'https://i.pravatar.cc/100?u=me' },
+  { id: 'l2', name: 'Youssef M.', level: 10, points: 2100, city: 'Maarif', img: 'https://i.pravatar.cc/100?u=12' },
+  { id: 'l3', name: 'Hind S.', level: 8, points: 1850, city: 'Maarif', img: 'https://i.pravatar.cc/100?u=13' },
+  { id: 'l4', name: 'Othmane K.', level: 6, points: 1200, city: 'Maarif', img: 'https://i.pravatar.cc/100?u=14' },
 ];
 
 export const MOCK_VOUCHERS: Voucher[] = [
