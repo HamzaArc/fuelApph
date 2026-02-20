@@ -1,0 +1,78 @@
+
+import React, { useState } from 'react';
+
+export const SecuritySettings: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const [faEnabled, setFaEnabled] = useState(true);
+  const [faceId, setFaceId] = useState(false);
+
+  return (
+    <div className="flex flex-col h-full bg-background-dark animate-fadeIn">
+      <header className="flex items-center justify-between p-4 pt-12 z-20">
+        <button onClick={onBack} className="size-11 rounded-2xl bg-surface-dark border border-white/5 flex items-center justify-center text-white">
+          <span className="material-symbols-outlined">arrow_back</span>
+        </button>
+        <h1 className="text-xl font-black">Security</h1>
+        <div className="size-11" />
+      </header>
+
+      <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-8">
+        <section className="space-y-4">
+          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Authentication</h2>
+          <div className="bg-surface-dark rounded-[2rem] border border-white/5 overflow-hidden">
+             <div className="p-5 flex items-center justify-between border-b border-white/5">
+                <div className="flex items-center gap-4">
+                   <div className="size-10 bg-white/5 rounded-xl flex items-center justify-center text-primary">
+                      <span className="material-symbols-outlined">password</span>
+                   </div>
+                   <div>
+                     <p className="text-sm font-bold text-white">Change Password</p>
+                     <p className="text-[10px] text-slate-500 font-medium">Last changed 3 months ago</p>
+                   </div>
+                </div>
+                <span className="material-symbols-outlined text-slate-600">chevron_right</span>
+             </div>
+             
+             <div className="p-5 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                   <div className="size-10 bg-white/5 rounded-xl flex items-center justify-center text-blue-400">
+                      <span className="material-symbols-outlined">phonelink_lock</span>
+                   </div>
+                   <div>
+                     <p className="text-sm font-bold text-white">Two-Factor (2FA)</p>
+                     <p className="text-[10px] text-slate-500 font-medium">Highly Recommended</p>
+                   </div>
+                </div>
+                <button 
+                  onClick={() => setFaEnabled(!faEnabled)}
+                  className={`w-12 h-6 rounded-full relative transition-all ${faEnabled ? 'bg-primary' : 'bg-slate-700'}`}
+                >
+                   <div className={`absolute top-1 size-4 rounded-full bg-white transition-all ${faEnabled ? 'left-7' : 'left-1'}`} />
+                </button>
+             </div>
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Biometrics</h2>
+          <div className="bg-surface-dark rounded-[2rem] border border-white/5 p-5 flex items-center justify-between">
+             <div className="flex items-center gap-4">
+                <div className="size-10 bg-white/5 rounded-xl flex items-center justify-center text-orange-400">
+                   <span className="material-symbols-outlined">fingerprint</span>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">FaceID / Fingerprint</p>
+                  <p className="text-[10px] text-slate-500 font-medium">Fast login and reporting</p>
+                </div>
+             </div>
+             <button 
+               onClick={() => setFaceId(!faceId)}
+               className={`w-12 h-6 rounded-full relative transition-all ${faceId ? 'bg-primary' : 'bg-slate-700'}`}
+             >
+                <div className={`absolute top-1 size-4 rounded-full bg-white transition-all ${faceId ? 'left-7' : 'left-1'}`} />
+             </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+};

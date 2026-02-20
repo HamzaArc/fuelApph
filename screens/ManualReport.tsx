@@ -1,0 +1,152 @@
+
+import React, { useState } from 'react';
+import { Station } from '../types';
+
+interface ManualReportProps {
+  station: Station;
+  onBack: () => void;
+  onComplete: (price: number, fuelType: string) => void;
+}
+
+export const ManualReport: React.FC<ManualReportProps> = ({ station, onBack, onComplete }) => {
+  const [priceStr, setPriceStr] = useState("13.49");
+  const [fuelType, setFuelType] = useState('Diesel');
+
+  const handleKeypadPress = (val: string) => {
+    if (val === 'backspace') {
+      setPriceStr(prev => prev.length > 1 ? prev.slice(0, -1) : "0");
+      return;
+    }
+    if (val === '.' && priceStr.includes('.')) return;
+    if (priceStr === "0" && val !== ".") {
+      setPriceStr(val);
+    } else {
+      // Limit to sensible length
+      if (priceStr.length >= 6) return;
+      setPriceStr(prev => prev + val);
+    }
+  };
+
+  const adjustPrice = (amount: number) => {
+    const current = parseFloat(priceStr) || 0;
+    setPriceStr(Math.max(0, current + amount).toFixed(2));
+  };
+
+  return (
+    <div className="fixed inset-0 z-[1200] bg-background-dark font-sans flex flex-col items-center justify-start text-slate-100 antialiased h-screen w-full overflow-hidden select-none animate-fadeIn">
+      {/* Top Navigation */}
+      <header className="w-full flex items-center justify-between px-4 py-4 pt-12 shrink-0 z-10">
+        <button onClick={onBack} className="flex items-center justify-center p-3 rounded-full hover:bg-white/10 transition-colors">
+          <span className="material-symbols-outlined text-2xl">close</span>
+        </button>
+        <h1 className="text-lg font-black uppercase tracking-widest">Report Price</h1>
+        <button className="flex items-center justify-center p-3 rounded-full hover:bg-white/10 transition-colors text-primary">
+          <span className="material-symbols-outlined text-2xl">document_scanner</span>
+        </button>
+      </header>
+
+      {/* Main Content Area - Scrollable for mobile compatibility */}
+      <main className="flex-1 w-full max-w-md flex flex-col px-4 pb-6 overflow-y-auto no-scrollbar gap-6">
+        
+        {/* Fuel Type Selector */}
+        <div className="grid grid-cols-2 gap-3 shrink-0">
+          {['Diesel', 'Sans Plomb'].map((type) => (
+            <button
+              key={type}
+              onClick={() => setFuelType(type)}
+              className={`h-16 flex items-center justify-center rounded-2xl border-2 transition-all duration-200 relative overflow-hidden ${
+                fuelType === type 
+                  ? 'bg-primary border-primary text-background-dark shadow-lg shadow-primary/20' 
+                  : 'bg-surface-dark border-transparent text-slate-400'
+              }`}
+            >
+              <span className="text-base font-black uppercase tracking-tight">{type === 'Diesel' ? 'Gasoil' : 'Sans Plomb'}</span>
+              {fuelType === type && (
+                <div className="absolute top-2 right-2 text-background-dark">
+                  <span className="material-symbols-outlined text-sm font-black">check_circle</span>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Price Display Section */}
+        <div className="flex flex-col items-center justify-center py-4 shrink-0">
+          <div className="flex items-center gap-8 w-full justify-center">
+            {/* Stepper Minus */}
+            <button 
+              onClick={() => adjustPrice(-0.01)}
+              className="size-12 flex items-center justify-center rounded-full bg-surface-dark text-slate-400 active:bg-red-500/20 active:text-red-400 transition-colors"
+            >
+              <span className="material-symbols-outlined text-3xl font-black">remove</span>
+            </button>
+            
+            {/* Main Price */}
+            <div className="flex flex-col items-center">
+              <div className="flex items-baseline">
+                <span className="text-[80px] font-black tracking-tighter leading-none text-white tabular-nums">
+                  {priceStr}
+                </span>
+              </div>
+              <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mt-3 opacity-70">MAD / Liter</span>
+            </div>
+            
+            {/* Stepper Plus */}
+            <button 
+              onClick={() => adjustPrice(0.01)}
+              className="size-12 flex items-center justify-center rounded-full bg-surface-dark text-slate-400 active:bg-primary/20 active:text-primary transition-colors"
+            >
+              <span className="material-symbols-outlined text-3xl font-black">add</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Numeric Keypad */}
+        <div className="grid grid-cols-3 gap-3 px-2 mb-4 shrink-0">
+          {["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "backspace"].map((key) => (
+            <button
+              key={key}
+              onClick={() => handleKeypadPress(key)}
+              className={`h-16 rounded-2xl transition-all flex items-center justify-center active:scale-90 text-2xl font-black ${
+                key === 'backspace' 
+                  ? 'bg-surface-dark/50 text-red-500' 
+                  : 'bg-surface-dark text-white'
+              }`}
+            >
+              {key === 'backspace' ? <span className="material-symbols-outlined">backspace</span> : key}
+            </button>
+          ))}
+        </div>
+
+        {/* Detected Station Info */}
+        <div className="flex items-center gap-4 p-4 bg-surface-dark/40 rounded-2xl border border-white/5 shrink-0">
+          <div className="size-11 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+            <span className="text-slate-900 font-black text-xs uppercase">{station.brand.substring(0, 2)}</span>
+          </div>
+          <div className="flex flex-col flex-1 min-w-0 text-left">
+            <div className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-primary text-[18px] leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
+              <span className="text-sm font-black text-white truncate uppercase">{station.name}</span>
+            </div>
+            <span className="text-[9px] text-slate-500 font-black uppercase tracking-tighter truncate mt-1">{station.location.address}</span>
+          </div>
+          <button className="text-[10px] font-black text-primary px-4 py-2 rounded-lg bg-primary/10 uppercase tracking-widest">
+            Change
+          </button>
+        </div>
+
+        {/* Submit Button */}
+        <button 
+          onClick={() => onComplete(parseFloat(priceStr), fuelType)}
+          className="w-full h-18 py-5 bg-primary text-background-dark font-black text-xl rounded-3xl shadow-[0_15px_30px_rgba(59,130,246,0.3)] hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-3 mt-2 shrink-0 mb-6 uppercase tracking-widest"
+        >
+          <span>Confirm Price</span>
+          <span className="material-symbols-outlined font-black">check</span>
+        </button>
+      </main>
+      
+      {/* iOS Home Indicator Spacer */}
+      <div className="h-6 w-full shrink-0" />
+    </div>
+  );
+};

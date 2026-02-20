@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Remix: FuelSpy Morocco",
+  "description": "A community-powered fuel price comparison app for Moroccan drivers. Find the cheapest fuel, report prices via OCR, and earn real rewards.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}

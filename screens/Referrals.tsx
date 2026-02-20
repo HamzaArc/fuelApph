@@ -1,0 +1,63 @@
+
+import React from 'react';
+
+export const Referrals: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  return (
+    <div className="flex flex-col h-full bg-background-dark animate-fadeIn">
+      <header className="flex items-center justify-between p-4 pt-12 z-20">
+        <button onClick={onBack} className="size-11 rounded-2xl bg-surface-dark border border-white/5 flex items-center justify-center text-white">
+          <span className="material-symbols-outlined">arrow_back</span>
+        </button>
+        <h1 className="text-xl font-black">Invite Friends</h1>
+        <div className="size-11" />
+      </header>
+
+      <div className="flex-1 overflow-y-auto no-scrollbar p-6">
+        <div className="text-center mb-10">
+          <div className="relative size-48 mx-auto mb-8">
+            <div className="absolute inset-0 bg-primary/20 blur-[80px] rounded-full animate-pulse-slow" />
+            <img 
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNjQ3fqVFwiU9xxrCL0L0ek57d3EKTz30Eqi9qwcK8KWkH73RF8D8bLS8DL8IU_KUPCyhtT1TwWzdBHK9ma4qTm_phoI_n57TuqH3B4ZMo-jCu2_wz11Xe6ptOi3cJC3Iqqe0L4CJewXWJm1IHS4PDp8TVDP_Yzn2mKF8aXnVUT_T0_Sg-tKAgfbWDZmpBB6dY_knk2m0glSw4oro9DdrSzJoHwMxaH_ZYCNe1cdRbuWEWUGnsA183JIKUo2RPYHFeIwSQmMW6xa1E" 
+              className="size-full object-contain relative z-10" 
+              alt="Invite"
+            />
+          </div>
+          <h2 className="text-4xl font-black text-white leading-none mb-3">Share the Savings.</h2>
+          <p className="text-slate-400 text-lg leading-relaxed px-4">Both you and your friend get <span className="text-primary font-bold">100 points</span> when they scan their first receipt.</p>
+        </div>
+
+        {/* 3 Step Guide */}
+        <div className="grid grid-cols-3 gap-2 mb-10">
+           <Step num={1} icon="send" label="Send link" />
+           <Step num={2} icon="qr_code_scanner" label="They scan" />
+           <Step num={3} icon="card_giftcard" label="Both earn" />
+        </div>
+
+        {/* Code Card */}
+        <div className="bg-surface-dark rounded-[2.5rem] p-8 border border-white/5 shadow-2xl relative overflow-hidden text-center">
+           <div className="absolute top-0 right-0 size-24 bg-primary/10 blur-3xl" />
+           <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4">Your personal code</span>
+           <div className="flex items-center justify-between gap-4 bg-background-dark/50 rounded-2xl border-2 border-dashed border-white/10 p-2 pl-6 mb-8">
+              <span className="text-2xl font-black tracking-widest text-white font-mono">KARIM-FS-24</span>
+              <button className="bg-primary text-background-dark size-12 rounded-xl flex items-center justify-center active:scale-90 transition-transform">
+                <span className="material-symbols-outlined font-black">content_copy</span>
+              </button>
+           </div>
+           <button className="w-full h-16 bg-primary hover:bg-primary-dark text-background-dark font-black text-lg rounded-2xl shadow-xl shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+             <span className="material-symbols-outlined">share</span>
+             Invite Now
+           </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Step: React.FC<{ num: number; icon: string; label: string }> = ({ num, icon, label }) => (
+  <div className="flex flex-col items-center gap-3 group">
+    <div className="size-12 rounded-2xl bg-white/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all">
+      <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+    </div>
+    <p className="text-[10px] font-black text-slate-500 uppercase text-center tracking-tighter">{num}. {label}</p>
+  </div>
+);
