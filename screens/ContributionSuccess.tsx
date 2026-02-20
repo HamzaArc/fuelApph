@@ -1,92 +1,121 @@
-
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 interface ContributionSuccessProps {
   onDone: () => void;
   summary: { station: string; fuel: string; price: number } | null;
+  isPioneer?: boolean;
 }
 
-export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone, summary }) => {
+export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone, summary, isPioneer }) => {
+  const [isSpinning, setIsSpinning] = useState(!isPioneer);
+  const [displayPoints, setDisplayPoints] = useState(0);
+  
+  // FIX: useMemo ensures the random number is generated exactly once, preventing infinite re-renders.
+  const targetPoints = useMemo(() => {
+    return isPioneer ? 200 : Math.floor(Math.random() * 481) + 20;
+  }, [isPioneer]);
+
+  useEffect(() => {
+    if (!isSpinning) {
+      setDisplayPoints(targetPoints);
+      return;
+    }
+
+    // The Slot Machine Effect
+    const interval = setInterval(() => {
+      setDisplayPoints(Math.floor(Math.random() * 999));
+    }, 50);
+
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      setDisplayPoints(targetPoints);
+      setIsSpinning(false);
+    }, 2500);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [isSpinning, targetPoints]);
+
   return (
-    <div className="fixed inset-0 z-[2000] bg-background-dark font-sans antialiased flex flex-col items-center overflow-y-auto no-scrollbar animate-fadeIn">
-      {/* Confetti & Glow Elements */}
+    <div className="fixed inset-0 z-[2000] bg-background-dark font-sans antialiased flex flex-col items-center justify-center overflow-y-auto no-scrollbar animate-fadeIn">
+      {/* Dynamic Background FX */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden h-full w-full">
-        <div className="absolute top-[10%] left-[20%] w-3 h-3 bg-primary rounded-full opacity-20 animate-pulse"></div>
-        <div className="absolute top-[30%] left-[10%] w-4 h-4 border-2 border-primary rounded-full opacity-20"></div>
-        <div className="absolute top-[5%] right-[30%] w-2 h-2 bg-primary rounded-full opacity-30"></div>
-        <div className="absolute bottom-[40%] left-[80%] w-3 h-3 bg-yellow-400 rounded-sm rotate-12 opacity-20"></div>
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[120%] h-1/2 bg-[radial-gradient(circle,rgba(59,130,246,0.1)_0%,rgba(16,34,22,0)_70%)] blur-3xl pointer-events-none"></div>
+        <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 w-[150%] h-[150%] blur-[100px] pointer-events-none transition-all duration-1000 ${
+          isSpinning ? 'bg-[radial-gradient(circle,rgba(59,130,246,0.2)_0%,transparent_70%)] animate-pulse' : 'bg-[radial-gradient(circle,rgba(251,191,36,0.15)_0%,transparent_70%)]'
+        }`}></div>
       </div>
 
-      {/* Main Content Container */}
       <div className="w-full max-w-md min-h-full flex flex-col px-6 py-12 relative z-10">
         
         {/* Top Section: Celebration */}
-        <div className="flex flex-col items-center mb-10">
-          <div className="relative w-full aspect-square max-w-[280px] mb-8">
-            {/* Trophy Image */}
-            <div 
-              className="w-full h-full bg-contain bg-center bg-no-repeat animate-bounce-slight" 
-              style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAaZKDtpD_IqaplKHD3WCQrVHclBU1W3Zqh0w4YzUwN_otFg-XHXDaIdNRm9Kiq_o4yZbcqlnMbQS3QfkIVeul_fBRQD5D_yf0Ng87Ie5WGiFry5adgIUzhnKZ7uBlJQfc55EptTv7_fACkdCpAq1v9sr_Moh3OUUmPby_T3giKA13Jszj2MrwTF606OzeuQFGWSOc1cASY_2Y4j6m5GJ5kACiRTPWJtTy9nGCiHsA9yUBXTw56_SLaRgee012KiDrxbhWkegMow3rY')" }}
-            />
+        <div className="flex flex-col items-center mb-8 mt-10">
+          <div className="text-center space-y-2 mb-8">
+            <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none drop-shadow-lg">
+              {isPioneer ? 'STATION ADDED!' : 'PRICE VERIFIED!'}
+            </h1>
+            <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">
+              {isPioneer ? 'You are a community pioneer' : 'Thanks for keeping prices accurate'}
+            </p>
           </div>
 
-          <div className="text-center space-y-4">
-            <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
-              AWESOME!
-            </h1>
-            <p className="text-slate-400 text-lg font-medium leading-relaxed">
-              You've helped <span className="text-primary font-black">12 drivers</span> save money today.
-            </p>
+          {/* THE SLOT MACHINE / REWARD DISPLAY */}
+          <div className={`relative flex flex-col items-center justify-center w-full aspect-square max-w-[280px] rounded-[3rem] border-4 transition-all duration-500 shadow-2xl ${
+            isSpinning 
+              ? 'border-primary/50 bg-surface-darker shadow-[0_0_50px_rgba(59,130,246,0.3)] animate-pulse' 
+              : 'border-accent-gold/80 bg-gradient-to-br from-surface-dark to-surface-darker shadow-[0_0_80px_rgba(251,191,36,0.4)] scale-105'
+          }`}>
+            <span className={`text-sm font-black uppercase tracking-[0.3em] mb-2 transition-colors ${isSpinning ? 'text-primary' : 'text-accent-gold'}`}>
+              {isSpinning ? 'Calculating Reward...' : (isPioneer ? 'Pioneer Bonus' : 'Mystery Reward')}
+            </span>
+            <div className="flex items-baseline gap-2 tabular-nums">
+              <span className={`text-[80px] font-black leading-none tracking-tighter transition-colors ${
+                isSpinning ? 'text-white blur-[1px]' : 'text-accent-gold drop-shadow-[0_0_20px_rgba(251,191,36,0.8)]'
+              }`}>
+                +{displayPoints}
+              </span>
+            </div>
+            <span className={`text-xl font-black mt-2 transition-colors ${isSpinning ? 'text-primary/50' : 'text-accent-gold/80'}`}>
+              PTS
+            </span>
+
+            {/* Confetti element that shows up when spinning stops */}
+            {!isSpinning && (
+              <div className="absolute -top-6 -right-6 text-4xl animate-bounce-in">🎉</div>
+            )}
           </div>
         </div>
 
-        {/* Middle Section: Stats Cards */}
-        <div className="space-y-4 mb-10">
-          {/* Streak Widget */}
-          <div className="bg-surface-dark border border-white/5 p-6 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <div className="size-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500">
-                  <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
-                </div>
-                <div className="text-left">
-                  <p className="text-white text-xl font-black leading-none">Daily Streak</p>
-                  <p className="text-slate-500 text-[10px] font-black mt-2 uppercase tracking-[0.2em]">4 DAYS IN A ROW!</p>
-                </div>
-              </div>
-              <span className="text-5xl font-black text-white italic">4</span>
-            </div>
-            {/* Progress Bar */}
-            <div className="w-full bg-black/40 h-3 rounded-full overflow-hidden relative">
-              <div className="bg-gradient-to-r from-orange-400 to-orange-600 h-full rounded-full shadow-[0_0_15px_rgba(249,115,22,0.4)] transition-all duration-1000" style={{ width: '80%' }}></div>
-            </div>
+        {/* Contribution Summary Card */}
+        <div className="bg-surface-dark/60 backdrop-blur-md rounded-[2rem] px-6 py-5 flex items-center gap-5 border border-white/5 mb-auto">
+          <div className={`size-12 rounded-full flex-shrink-0 flex items-center justify-center border ${isPioneer ? 'bg-accent-gold/10 border-accent-gold/20 text-accent-gold' : 'bg-primary/10 border-primary/20 text-primary'}`}>
+            <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+              {isPioneer ? 'flag' : 'check_circle'}
+            </span>
           </div>
-
-          {/* Contribution Summary Card */}
-          <div className="bg-surface-dark/60 backdrop-blur-md rounded-[2rem] px-6 py-5 flex items-center gap-5 border border-white/5">
-            <div className="size-12 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center border border-primary/20">
-              <span className="material-symbols-outlined text-primary text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-            </div>
-            <div className="flex flex-col text-left overflow-hidden">
-              <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1 opacity-70">Your Contribution</span>
-              <span className="text-base font-black text-white truncate">
-                {summary ? `${summary.station}, ${summary.fuel} @ ${summary.price.toFixed(2)} DH` : "Contribution Verified"}
-              </span>
-            </div>
+          <div className="flex flex-col text-left overflow-hidden">
+            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1 opacity-70">
+              Contribution Logged
+            </span>
+            <span className="text-sm font-black text-white truncate">
+              {summary ? `${summary.station} • ${summary.price.toFixed(2)} DH` : "Contribution Verified"}
+            </span>
           </div>
         </div>
 
         {/* Bottom Section: Actions */}
-        <div className="mt-auto space-y-4">
-          <button className="w-full h-16 bg-primary hover:bg-blue-400 active:scale-[0.98] transition-all text-background-dark font-black text-xl rounded-[2rem] shadow-[0_15px_30px_rgba(59,130,246,0.3)]">
-            Share Success
-          </button>
+        <div className="mt-8 space-y-4 w-full">
           <button 
+            disabled={isSpinning}
             onClick={onDone}
-            className="w-full h-12 text-slate-500 hover:text-white font-black text-xs uppercase tracking-[0.3em] transition-all"
+            className={`w-full h-16 font-black text-xl rounded-[2rem] transition-all uppercase tracking-widest ${
+              isSpinning 
+                ? 'bg-surface-dark text-slate-500 opacity-50 cursor-not-allowed' 
+                : 'bg-primary hover:bg-blue-400 text-background-dark shadow-[0_15px_30px_rgba(59,130,246,0.3)] active:scale-95'
+            }`}
           >
-            Back to Map
+            {isSpinning ? 'Wait for it...' : 'Awesome, Return to Map'}
           </button>
         </div>
       </div>

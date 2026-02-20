@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Station } from '../types';
 
@@ -12,7 +11,17 @@ interface StationDetailsProps {
 
 export const StationDetails: React.FC<StationDetailsProps> = ({ station, onBack, onReport, onManualReport, onVoiceReport }) => {
   const [showRating, setShowRating] = useState(false);
-  const [ratings, setRatings] = useState({ cleanliness: 4, service: 0, speed: 0 });
+  const [oneTapSuccess, setOneTapSuccess] = useState(false);
+
+  const openNavigation = () => {
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${station.location.lat},${station.location.lng}`, '_blank');
+  };
+
+  const handleOneTap = () => {
+    setOneTapSuccess(true);
+    // In production, this fires an API call to refresh the lastUpdated timestamp
+    setTimeout(() => setOneTapSuccess(false), 3000);
+  };
 
   const amenitiesMap: Record<string, string> = {
     'Café': 'local_cafe',
@@ -35,9 +44,6 @@ export const StationDetails: React.FC<StationDetailsProps> = ({ station, onBack,
         <div className="absolute top-14 left-4 right-4 flex justify-between items-start z-20">
           <button onClick={onBack} className="bg-surface-dark/90 backdrop-blur-md p-3 rounded-full text-white shadow-lg border border-white/10">
             <span className="material-symbols-outlined text-[24px]">arrow_back</span>
-          </button>
-          <button className="bg-surface-dark/90 backdrop-blur-md p-3 rounded-full text-white shadow-lg border border-white/10">
-            <span className="material-symbols-outlined text-[24px]">layers</span>
           </button>
         </div>
 
@@ -76,9 +82,12 @@ export const StationDetails: React.FC<StationDetailsProps> = ({ station, onBack,
                       </div>
                     </div>
                   </div>
-                  <button className="p-2 rounded-full hover:bg-white/5 text-gray-400">
-                    <span className="material-symbols-outlined">favorite</span>
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={openNavigation} className="px-3 py-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1 border border-primary/20">
+                      <span className="material-symbols-outlined text-lg">navigation</span>
+                      <span className="text-xs font-bold uppercase tracking-widest">Drive</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Price Grid */}
@@ -105,39 +114,30 @@ export const StationDetails: React.FC<StationDetailsProps> = ({ station, onBack,
                   </div>
                 </div>
 
-                {/* Price History */}
-                <div className="mb-8 p-4 bg-white/5 border border-white/5 rounded-2xl text-left">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-white font-semibold">Price History</h3>
-                    <div className="flex gap-2">
-                        <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 rounded-full bg-primary"></div>
-                            <span className="text-xs text-gray-400">Diesel</span>
-                        </div>
-                    </div>
-                  </div>
-                  <div className="relative h-24 w-full mt-2">
-                    <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 50">
-                      <path d="M0,45 L20,40 L40,42 L60,35 L80,30 L100,28" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" />
-                      <circle cx="80" cy="30" fill="#3b82f6" r="2" />
-                    </svg>
-                  </div>
-                  <div className="flex justify-between text-[10px] text-gray-500 mt-2 font-bold uppercase tracking-widest">
-                    <span>30d ago</span>
-                    <span>Today</span>
-                  </div>
-                </div>
-
-                {/* Verification Status */}
-                <div className="flex items-center gap-2 mb-8 px-1">
+                {/* Verification Status & Price History */}
+                <div className="flex items-center gap-2 mb-4 px-1">
                   <div className="size-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
                   <span className="text-xs text-slate-400 font-medium">Verified by <span className="text-white font-bold">{station.verifiedBy || 'Community'}</span> • {station.lastUpdated}</span>
                 </div>
 
+                {/* 1-Tap Verify Button */}
+                {!oneTapSuccess ? (
+                  <button onClick={handleOneTap} className="w-full relative group flex items-center justify-center gap-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 text-green-400 py-4 rounded-2xl mb-8 shadow-[0_0_20px_rgba(34,197,94,0.05)] transition-all active:scale-95">
+                    <span className="text-2xl animate-bounce-slight">👍</span>
+                    <span className="font-black text-sm uppercase tracking-widest">Confirm Current Prices</span>
+                    <div className="absolute top-0 right-0 -mt-2 -mr-2 bg-green-500 text-background-dark text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg">+10 PTS</div>
+                  </button>
+                ) : (
+                  <div className="w-full flex items-center justify-center gap-2 bg-green-500 text-background-dark py-4 rounded-2xl mb-8 shadow-[0_0_20px_rgba(34,197,94,0.4)] animate-bounce-in">
+                    <span className="material-symbols-outlined font-black">check_circle</span>
+                    <span className="font-black text-sm uppercase tracking-widest">Verified! +10 Points</span>
+                  </div>
+                )}
+
                 {/* Reporting Options */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-bold text-white">Report Prices</h3>
+                    <h3 className="text-lg font-bold text-white">Report Change</h3>
                     <div className="flex items-center gap-1 text-xs font-black text-accent-gold bg-accent-gold/10 px-2.5 py-1 rounded-full border border-accent-gold/20">
                       <span className="material-symbols-outlined text-[14px] fill-current">stars</span>
                       <span>Earn +50 pts</span>

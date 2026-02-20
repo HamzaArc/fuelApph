@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Layout } from './components/Layout';
 import { MapExplorer } from './components/MapExplorer';
@@ -9,52 +8,35 @@ import { Profile } from './screens/Profile';
 import { ContributionSuccess } from './screens/ContributionSuccess';
 import { Onboarding } from './screens/Onboarding';
 import { NearbyList } from './screens/NearbyList';
-import { StationDetails } from './screens/StationDetails';
 import { ManualReport } from './screens/ManualReport';
 import { VoiceReport } from './screens/VoiceReport';
 import { SearchScreen } from './screens/SearchScreen';
+import { AddStation } from './screens/AddStation';
 import { Station } from './types';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('map');
   const [searchView, setSearchView] = useState<'filters' | 'results'>('filters');
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
-  const [viewMode, setViewMode] = useState<'map' | 'list' | 'details' | 'manual_report' | 'voice_report'>('map');
-  // Fix: Added state to track the previous view (map or details) before entering manual/voice reporting 
-  // to avoid type overlap errors when trying to determine the return path inside those flows.
-  const [lastViewBeforeReport, setLastViewBeforeReport] = useState<'map' | 'details'>('map');
+  
+  // Cleaned up view routing
+  const [viewMode, setViewMode] = useState<'map' | 'list' | 'manual_report' | 'voice_report' | 'add_station'>('map');
+  const [lastViewBeforeReport, setLastViewBeforeReport] = useState<'map'>('map');
+  
   const [isScanning, setIsScanning] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [hasOnboarded, setHasOnboarded] = useState(false);
-
-  // Success summary for the celebration screen
+  
+  const [isPioneerContribution, setIsPioneerContribution] = useState(false);
+  const [pendingLocation, setPendingLocation] = useState<{lat: number, lng: number} | null>(null);
   const [lastContribution, setLastContribution] = useState<{station: string, fuel: string, price: number} | null>(null);
 
-  const handleReport = () => {
-    setIsScanning(true);
-  };
+  const handleReport = () => setIsScanning(true);
 
-  const handleScanComplete = (price: number, type: string) => {
+  const finishContribution = (stationName: string, fuelType: string, price: number, pioneer: boolean = false) => {
     setIsScanning(false);
-    if (selectedStation) {
-      setLastContribution({ station: selectedStation.name, fuel: type, price });
-    }
-    setShowSuccess(true);
-    setViewMode('map');
-  };
-
-  const handleManualReportComplete = (price: number, type: string) => {
-    if (selectedStation) {
-      setLastContribution({ station: selectedStation.name, fuel: type, price });
-    }
-    setShowSuccess(true);
-    setViewMode('map');
-  };
-
-  const handleVoiceReportComplete = (price: number, type: string) => {
-    if (selectedStation) {
-      setLastContribution({ station: selectedStation.name, fuel: type, price });
-    }
+    setLastContribution({ station: stationName, fuel: fuelType, price });
+    setIsPioneerContribution(pioneer);
     setShowSuccess(true);
     setViewMode('map');
   };
@@ -66,21 +48,18 @@ const App: React.FC = () => {
 
   const selectStation = (s: Station) => {
     setSelectedStation(s);
-    setViewMode('details');
+    setViewMode('map'); // Stays on map, but selectedStation triggers the full StationSheet popup
   };
 
-  if (!hasOnboarded) {
-    return <Onboarding onComplete={() => setHasOnboarded(true)} />;
-  }
-
-  if (isScanning) {
-    return <ScanFlow onCancel={() => setIsScanning(false)} onComplete={handleScanComplete} />;
-  }
+  if (!hasOnboarded) return <Onboarding onComplete={() => setHasOnboarded(true)} />;
+  
+  if (isScanning) return <ScanFlow onCancel={() => setIsScanning(false)} onComplete={(price, type) => finishContribution(selectedStation?.name || 'Unknown', type, price, false)} />;
 
   if (showSuccess) {
     return (
       <ContributionSuccess 
         summary={lastContribution} 
+        isPioneer={isPioneerContribution}
         onDone={() => {
           setShowSuccess(false);
           setSelectedStation(null);
@@ -92,12 +71,8 @@ const App: React.FC = () => {
   return (
     <Layout activeTab={activeTab} onTabChange={(tab) => {
       setActiveTab(tab);
-      if (tab === 'map') {
-        if (activeTab !== 'map') setViewMode('map');
-      }
-      if (tab === 'search') {
-        setSearchView('filters');
-      }
+      if (tab === 'map' && activeTab !== 'map') setViewMode('map');
+      if (tab === 'search') setSearchView('filters');
     }}>
       {activeTab === 'map' && (
         <>
@@ -106,10 +81,14 @@ const App: React.FC = () => {
               <MapExplorer 
                 hideBottomCard={!!selectedStation}
                 onViewList={() => setViewMode('list')}
-                onStationSelect={(s) => {
-                  setSelectedStation(s);
-                }} 
+                onStationSelect={(s) => setSelectedStation(s)} 
+                onAddStationInitiated={(loc) => {
+                  setPendingLocation(loc);
+                  setViewMode('add_station');
+                }}
               />
+              
+              {/* This is now the Full Floating Details Sheet */}
               <StationSheet 
                 station={selectedStation} 
                 onClose={() => setSelectedStation(null)} 
@@ -122,70 +101,35 @@ const App: React.FC = () => {
                   setLastViewBeforeReport('map');
                   setViewMode('voice_report');
                 }}
-                onViewDetails={() => setViewMode('details')}
               />
             </>
           )}
 
           {viewMode === 'list' && (
-            <NearbyList 
-              onBack={() => setViewMode('map')} 
-              onStationSelect={selectStation}
-            />
+            <NearbyList onBack={() => setViewMode('map')} onStationSelect={selectStation} />
           )}
 
-          {viewMode === 'details' && selectedStation && (
-            <StationDetails 
-              station={selectedStation} 
-              onBack={() => setViewMode('map')} 
-              onReport={handleReport}
-              onManualReport={() => {
-                setLastViewBeforeReport('details');
-                setViewMode('manual_report');
-              }}
-              onVoiceReport={() => {
-                setLastViewBeforeReport('details');
-                setViewMode('voice_report');
-              }}
+          {viewMode === 'add_station' && (
+            <AddStation 
+              location={pendingLocation}
+              onBack={() => setViewMode('map')}
+              onComplete={(brand, price) => finishContribution(`${brand} Station`, 'Diesel', price, true)}
             />
           )}
 
           {viewMode === 'manual_report' && selectedStation && (
-            <ManualReport 
-              station={selectedStation}
-              // Fix: Use the tracked previous view instead of checking current viewMode (which is always 'manual_report')
-              onBack={() => setViewMode(lastViewBeforeReport)}
-              onComplete={handleManualReportComplete}
-            />
+            <ManualReport station={selectedStation} onBack={() => setViewMode(lastViewBeforeReport)} onComplete={(p, t) => finishContribution(selectedStation.name, t, p, false)} />
           )}
 
           {viewMode === 'voice_report' && selectedStation && (
-            <VoiceReport 
-              station={selectedStation}
-              // Fix: Use the tracked previous view instead of checking current viewMode (which is always 'voice_report')
-              onBack={() => setViewMode(lastViewBeforeReport)}
-              onComplete={handleVoiceReportComplete}
-            />
+            <VoiceReport station={selectedStation} onBack={() => setViewMode(lastViewBeforeReport)} onComplete={(p, t) => finishContribution(selectedStation.name, t, p, false)} />
           )}
         </>
       )}
       
       {activeTab === 'search' && (
-        <>
-          {searchView === 'filters' ? (
-            <SearchScreen 
-              onBack={() => setActiveTab('map')}
-              onApplyFilters={() => setSearchView('results')}
-            />
-          ) : (
-            <NearbyList 
-              title="Search Results"
-              initialSearch=""
-              onBack={() => setSearchView('filters')} 
-              onStationSelect={selectStation}
-            />
-          )}
-        </>
+        searchView === 'filters' ? <SearchScreen onBack={() => setActiveTab('map')} onApplyFilters={() => setSearchView('results')} />
+        : <NearbyList title="Search Results" initialSearch="" onBack={() => setSearchView('filters')} onStationSelect={selectStation} />
       )}
 
       {activeTab === 'rewards' && <Rewards />}
