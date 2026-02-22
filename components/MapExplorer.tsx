@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MOCK_STATIONS } from '../constants';
@@ -13,13 +13,33 @@ interface MapExplorerProps {
   onAddStationInitiated: (location: { lat: number, lng: number }) => void;
 }
 
-const CenterTracker: React.FC<{ onCenterChange: (center: L.LatLng) => void }> = ({ onCenterChange }) => {
+// 1. Bulletproof BoundsTracker
+const BoundsTracker: React.FC<{ onBoundsChange: (bounds: L.LatLngBounds, center: L.LatLng) => void }> = ({ onBoundsChange }) => {
+  const map = useMapEvents({
+    moveend: () => onBoundsChange(map.getBounds(), map.getCenter()),
+    zoomend: () => onBoundsChange(map.getBounds(), map.getCenter()),
+  });
+
+  // Ensure initial load only runs exactly once
+  const isInitialLoad = useRef(true);
+  useEffect(() => {
+    if (isInitialLoad.current) {
+      onBoundsChange(map.getBounds(), map.getCenter());
+      isInitialLoad.current = false;
+    }
+  }, [map, onBoundsChange]);
+
+  return null;
+};
+
+// 2. Map Controller to handle "Flying" to searched coordinates
+const MapController: React.FC<{ targetCenter: L.LatLng | null }> = ({ targetCenter }) => {
   const map = useMap();
   useEffect(() => {
-    const handleMoveEnd = () => onCenterChange(map.getCenter());
-    map.on('moveend', handleMoveEnd);
-    return () => { map.off('moveend', handleMoveEnd); };
-  }, [map, onCenterChange]);
+    if (targetCenter) {
+      map.flyTo(targetCenter, 14, { animate: true, duration: 1.5 });
+    }
+  }, [targetCenter, map]);
   return null;
 };
 
@@ -27,18 +47,19 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
   const [activeFuel, setActiveFuel] = useState<FuelType>('Diesel');
   const [isBottomCardExpanded, setIsBottomCardExpanded] = useState(false);
   const [isDroppingPin, setIsDroppingPin] = useState(false);
-  const [mapCenter, setMapCenter] = useState<L.LatLng>(new L.LatLng(33.5890, -7.6310));
-  const [touchStart, setTouchStart] = useState(0);
   
+  const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
+  const [mapCenter, setMapCenter] = useState<L.LatLng>(new L.LatLng(33.5890, -7.6310));
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [targetCenter, setTargetCenter] = useState<L.LatLng | null>(null);
+
+  const [touchStart, setTouchStart] = useState(0);
   const [isRouteMode, setIsRouteMode] = useState(false);
   const [destination, setDestination] = useState('');
   
-  // Ghost Station State
   const [dynamicStations, setDynamicStations] = useState<Station[]>([]);
   const [isLoadingArea, setIsLoadingArea] = useState(false);
-
-  // If user moves map far away, we simulate an area where our DB is empty
-  const isUnchartedArea = Math.abs(mapCenter.lat - 33.5890) > 0.05 || Math.abs(mapCenter.lng - -7.6310) > 0.05;
 
   const fuelTypes: { id: FuelType; label: string }[] = [
     { id: 'Diesel', label: 'Diesel' },
@@ -46,30 +67,63 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
     { id: 'Premium', label: 'Premium' }
   ];
 
-  // Smart Data Fetching Logic (Triggers when map moves)
+  // Memoize the bounds handler to prevent React infinite loops
+  const handleBoundsChange = useCallback((bounds: L.LatLngBounds, center: L.LatLng) => {
+    setMapBounds(bounds);
+    setMapCenter(center);
+  }, []);
+
+  const handleSearch = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      setIsLoadingArea(true);
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery + ', Morocco')}&limit=1`);
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+          const newCenter = new L.LatLng(parseFloat(data[0].lat), parseFloat(data[0].lon));
+          setTargetCenter(newCenter);
+        } else {
+          alert('Location not found. Try another city or area in Morocco.');
+        }
+      } catch (err) {
+        console.error('Search failed:', err);
+      } finally {
+        setIsLoadingArea(false);
+      }
+    }
+  };
+
+  // Extract a string key so the useEffect only fires when the actual coordinates change, not the object reference
+  const boundsKey = mapBounds ? `${mapBounds.getSouth().toFixed(4)},${mapBounds.getWest().toFixed(4)},${mapBounds.getNorth().toFixed(4)},${mapBounds.getEast().toFixed(4)}` : null;
+
   useEffect(() => {
     const loadArea = async () => {
+      if (!mapBounds) return;
+      
       setIsLoadingArea(true);
-      if (isUnchartedArea) {
-        // Fetch from our "Google Places" proxy service
-        const googleImportedStations = await fetchStationsInBounds(
-          { lat: mapCenter.lat, lng: mapCenter.lng }, 
-          isUnchartedArea
-        );
-        setDynamicStations(googleImportedStations);
-      } else {
-        setDynamicStations([]);
-      }
+      const boundsData = {
+        south: mapBounds.getSouth(),
+        west: mapBounds.getWest(),
+        north: mapBounds.getNorth(),
+        east: mapBounds.getEast(),
+      };
+
+      const importedStations = await fetchStationsInBounds(boundsData);
+      
+      const mockIds = new Set(MOCK_STATIONS.map(s => s.id));
+      const newStations = importedStations.filter(s => !mockIds.has(s.id));
+      
+      setDynamicStations(newStations);
       setIsLoadingArea(false);
     };
 
-    const debounceTimer = setTimeout(loadArea, 500); // Debounce map panning
+    const debounceTimer = setTimeout(loadArea, 700); 
     return () => clearTimeout(debounceTimer);
-  }, [mapCenter, isUnchartedArea]);
+  }, [boundsKey]); 
 
-  const displayedStations = isUnchartedArea ? dynamicStations : MOCK_STATIONS;
+  const displayedStations = [...MOCK_STATIONS, ...dynamicStations];
 
-  // We only consider real stations for the "Cheapest Nearby" card
   const cheapestNearby = useMemo(() => {
     const realStations = displayedStations.filter(s => !s.isGhost && s.prices[activeFuel]);
     if (realStations.length === 0) return null;
@@ -93,19 +147,40 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
   };
 
   const createCustomIcon = useCallback((station: Station) => {
+    // Moved brandColors to the top so Ghost Stations can use the correct colors for their logos
+    const brandColors: Record<string, string> = {
+      'Afriquia': '#1A6B3C', 'Shell': '#FBDB0C', 'TotalEnergies': '#ED1C24',
+      'Petrom': '#1A5276', 'Ola Energy': '#003399', 'Winxo': '#913bb1'
+    };
+
     if (station.isGhost) {
-      // GHOST PIN UI: Gray, transparent, pulsing ring, asking for price
+      const bgColor = brandColors[station.brand] || '#475569';
+      const textColor = station.brand === 'Shell' ? '#000' : '#fff';
+      const displayName = station.brand === 'Other' ? 'Station' : station.brand;
+
       const iconHTML = renderToStaticMarkup(
-        <div className="relative flex flex-col items-center group">
-          <div className="absolute inset-0 bg-slate-500/20 rounded-full blur-md animate-pulse-slow scale-150"></div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl shadow-lg border border-slate-500/50 bg-surface-darker/80 backdrop-blur-sm text-slate-400 z-10">
-            <span className="material-symbols-outlined text-[14px]">add_a_photo</span>
-            <span className="text-[10px] font-black tracking-widest uppercase">Add Price</span>
+        <div className="relative flex flex-col items-center group hover:z-[100] transition-all">
+          {/* Changed to a compact, single-line, horizontally scrolled design using whitespace-nowrap */}
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-[10px] shadow-lg border border-white/5 bg-surface-dark/95 backdrop-blur-md z-10 whitespace-nowrap">
+            {/* Small Brand Logo */}
+            <div 
+              className="w-3.5 h-3.5 rounded flex items-center justify-center text-[7px] font-black shadow-sm" 
+              style={{ backgroundColor: bgColor, color: textColor }}
+            >
+              {station.brand.charAt(0)}
+            </div>
+            {/* Station Brand Name */}
+            <span className="text-[10px] font-bold text-slate-300 truncate max-w-[60px]">{displayName}</span>
+            {/* Divider */}
+            <div className="w-px h-2.5 bg-white/10 mx-0.5"></div>
+            {/* Plus Icon instead of big text */}
+            <span className="material-symbols-outlined text-[13px] text-slate-400">add_circle</span>
           </div>
-          <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-slate-600/80 -mt-[1px]" />
+          <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-surface-dark/95 -mt-[1px]" />
         </div>
       );
-      return L.divIcon({ html: iconHTML, className: 'custom-modern-pin', iconSize: [90, 40], iconAnchor: [45, 40] });
+      // Adjusted anchor sizing for the new slimmer icon
+      return L.divIcon({ html: iconHTML, className: 'custom-modern-pin', iconSize: [100, 30], iconAnchor: [50, 30] });
     }
 
     const price = station.prices[activeFuel];
@@ -113,11 +188,6 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
 
     const allPrices = displayedStations.filter(s => !s.isGhost).map(s => s.prices[activeFuel]).filter(Boolean) as number[];
     const isCheapest = price === Math.min(...allPrices);
-
-    const brandColors: Record<string, string> = {
-      'Afriquia': '#1A6B3C', 'Shell': '#FBDB0C', 'TotalEnergies': '#ED1C24',
-      'Petrom': '#1A5276', 'Ola Energy': '#003399', 'Winxo': '#913bb1'
-    };
 
     const iconHTML = renderToStaticMarkup(
       <div className="relative flex flex-col items-center">
@@ -149,7 +219,10 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
                 </span>
                 <input 
                   type="text" 
-                  placeholder={isRouteMode ? "Start: Current Location" : "Search station or area..."} 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearch}
+                  placeholder={isRouteMode ? "Start: Current Location" : "Search city... (Press Enter)"} 
                   disabled={isRouteMode}
                   className="bg-transparent border-none outline-none flex-1 text-xs font-bold text-white placeholder:text-slate-500 focus:ring-0 truncate disabled:opacity-50" 
                 />
@@ -211,7 +284,11 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
       <div className="absolute inset-0 z-0">
         <MapContainer center={[33.5890, -7.6310]} zoom={14} zoomControl={false} className="h-full w-full">
           <TileLayer attribution='© CARTO' url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
-          <CenterTracker onCenterChange={setMapCenter} />
+          <MapController targetCenter={targetCenter} />
+          
+          {/* Passed properly memoized handler */}
+          <BoundsTracker onBoundsChange={handleBoundsChange} />
+          
           {!isDroppingPin && displayedStations.map(station => {
             const icon = createCustomIcon(station);
             if (!icon) return null;
