@@ -1,50 +1,51 @@
-
 import React, { useState } from 'react';
 import { MOCK_USER, MOCK_VOUCHERS } from '../constants';
 import { Voucher } from '../types';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const Rewards: React.FC = () => {
+  const { t } = useLanguage();
   const [activeView, setActiveView] = useState<'shop' | 'wallet'>('shop');
   const [activeCategory, setActiveCategory] = useState('All');
   const [expandedVoucher, setExpandedVoucher] = useState<string | null>(null);
 
   const categories = [
-    { id: 'All', label: 'All', icon: null },
-    { id: 'Fuel', label: 'Fuel', icon: 'local_gas_station' },
-    { id: 'Wash', label: 'Car Wash', icon: 'local_car_wash' },
-    { id: 'Food', label: 'Food', icon: 'restaurant' }
+    { id: 'All', label: t('rewards.cats.all'), icon: null },
+    { id: 'Fuel', label: t('rewards.cats.fuel'), icon: 'local_gas_station' },
+    { id: 'Wash', label: t('rewards.cats.wash'), icon: 'local_car_wash' },
+    { id: 'Food', label: t('rewards.cats.food'), icon: 'restaurant' }
   ];
 
   const shopItems = [
     {
       id: 'r1',
       brand: 'Shell',
-      title: 'Basic Car Wash',
-      desc: 'Exterior wash and tire shine at participating stations.',
+      title: t('rewards.items.washTitle'),
+      desc: t('rewards.items.washDesc'),
       points: 800,
       image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCHHw9kQVBjGygajvmItLM19yUSSh4AkwTGzrjUsVGhU_dID3gtb57jr5upE7rfyEL202l2seTds1nipBQltp5fYlNlNdP-ZVtcpVk9Q1NRe1AOxczTJrg5iyjvqSoJNqMj2rFDKf14srkS-62YQXCATISvSWlVaIUY4o39T9FiYGXck072UJOBpyq6DVoVp6wcJXih6-REcLbzcci2I8Y7DdJ1SDqeVd3A8SR3s2HIORK13M8TyVHOV2KZieqD-6_3yh3BuSCOhU_W'
     },
     {
       id: 'r2',
       brand: 'Afriquia',
-      title: '50 DH Fuel Voucher',
-      desc: 'Discount on your next fill-up at Afriquia.',
+      title: t('rewards.items.fuelTitle'),
+      desc: t('rewards.items.fuelDesc'),
       points: 1200,
       image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBaCd-jraCP-vQ_N1eQEZ5ss2ToUHpSuXyjoU9wMGfsLqFLHduBOaeRsCc9vxMXbi2OscPKF264sipBP11fb2F8m1_wXppmhihO8IDSwlQqLIFJ2w5zAkgIZ2Goy-QlAHzaoPP7ZdjhVdDLa_HJM0DtnD8l9OpplNa5ImhCV7ePUzqY8QlAWOLGMOoOxk73WIUTOcFzohTOyQY8RkfSy0aQZ63F4nMo7nGXFMzS_7I3aFBbcpxGR7KO8gXDIHEaZbmi-blW1FjYXEls'
     },
     {
       id: 'r3',
       brand: 'Shell',
-      title: 'Breakfast Combo',
-      desc: 'Coffee and croissant at Shell Select.',
+      title: t('rewards.items.foodTitle'),
+      desc: t('rewards.items.foodDesc'),
       points: 350,
       image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBL3Ig3ORY6knDPyTpjeVMPmSdidXI1CZ4_iSlZNjUqQ_cO-5nc1OQ0u2Amh0NL03R3JGjYoi7qW_ypCBeWrtfotbZ6Ii56ZPmCYqDwAi7wDaLg4SdEitPR-u90ohXRAVP400nBNA4s074Im68P4n-UGUaW87zFDVjaD_1glbk0NojiAkkSMtp7ror6tT1WCoq7s1eWnzjRochIHM8kHfQhY8ne6YwLYITyz7m9kTEii1KxL0cNjIrJuK3Bnjn_2xoFhDoeekIb2QMb'
     },
     {
       id: 'r4',
       brand: 'TotalEnergies',
-      title: 'Screen Wash 1L',
-      desc: 'High quality screen wash fluid.',
+      title: t('rewards.items.fluidTitle'),
+      desc: t('rewards.items.fluidDesc'),
       points: 600,
       image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD967_AYzMdLPLngiPPxV5XTYUUREjthiJbyxKF0tMp1vjUlEiw6gNoFkQF_0-nN97d3O-gg-N-epxPRDOnDh2QzLVoBh3HMLByPEdXcplUjJeQDuAevH3-KTI-OXkuyV8h3ZUtJj65bcSB6ULmk6vijOxHjpmcZ8vnc7bbzmfwSlwisZoWgib8KsyVamZCTueryxnLAMc6DAb8poMOQNU095pB_Uv6-rbBN7RHjBKNP1iNz9s6cAWqYARt0fcgLrOzuF8EUWiLaBcu'
     }
@@ -54,7 +55,7 @@ export const Rewards: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-background-dark animate-fadeIn pb-32">
       {/* Header */}
       <header className="flex items-center justify-between p-4 pt-12 pb-2 sticky top-0 z-20 bg-background-dark/95 backdrop-blur-md">
-        <h2 className="text-xl font-black text-white">{activeView === 'shop' ? 'Rewards Shop' : 'My Wallet'}</h2>
+        <h2 className="text-xl font-black text-white">{activeView === 'shop' ? t('rewards.shopTitle') : t('rewards.walletTitle')}</h2>
         <div className="flex items-center gap-2">
           {activeView === 'shop' ? (
             <button 
@@ -62,7 +63,7 @@ export const Rewards: React.FC = () => {
               className="flex h-10 px-4 items-center justify-center rounded-full bg-surface-dark text-primary border border-white/10 text-xs font-bold gap-2"
             >
               <span className="material-symbols-outlined text-[18px]">account_balance_wallet</span>
-              Wallet
+              {t('rewards.wallet')}
             </button>
           ) : (
             <button 
@@ -70,7 +71,7 @@ export const Rewards: React.FC = () => {
               className="flex h-10 px-4 items-center justify-center rounded-full bg-surface-dark text-primary border border-white/10 text-xs font-bold gap-2"
             >
               <span className="material-symbols-outlined text-[18px]">redeem</span>
-              Shop
+              {t('rewards.shop')}
             </button>
           )}
           <button className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-dark text-slate-400 border border-white/10">
@@ -88,7 +89,7 @@ export const Rewards: React.FC = () => {
                 <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-primary/10 blur-3xl"></div>
                 <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-primary/5 blur-3xl"></div>
                 <div className="relative z-10 flex flex-col items-center gap-1">
-                  <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Available Balance</span>
+                  <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{t('rewards.availableBalance')}</span>
                   <div className="flex items-baseline gap-2">
                     <h1 className="text-5xl font-black text-white tracking-tighter">{MOCK_USER.totalPoints.toLocaleString()}</h1>
                     <span className="text-primary font-bold">PTS</span>
@@ -97,8 +98,8 @@ export const Rewards: React.FC = () => {
                 {/* Level Progress */}
                 <div className="mt-6 w-full">
                   <div className="flex justify-between text-[10px] text-slate-500 mb-2 font-black uppercase tracking-widest">
-                    <span>Silver Member</span>
-                    <span>Gold (3,000 pts)</span>
+                    <span>{t('rewards.silverMember')}</span>
+                    <span>{t('rewards.goldTarget')}</span>
                   </div>
                   <div className="h-1.5 w-full rounded-full bg-black/40 overflow-hidden">
                     <div className="h-full bg-primary rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" style={{ width: '81%' }}></div>
@@ -131,7 +132,7 @@ export const Rewards: React.FC = () => {
             <section className="px-4 mb-8">
               <div className="flex items-center gap-2 mb-4">
                 <span className="material-symbols-outlined text-orange-500 fill-1">local_fire_department</span>
-                <h3 className="text-lg font-bold text-white">Hot Deal</h3>
+                <h3 className="text-lg font-bold text-white">{t('rewards.hotDeal')}</h3>
               </div>
               <div className="group relative overflow-hidden rounded-3xl bg-surface-dark border border-white/5 aspect-[16/9]">
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10"></div>
@@ -143,9 +144,9 @@ export const Rewards: React.FC = () => {
                 <div className="absolute bottom-0 left-0 right-0 p-5 z-20">
                   <div className="flex justify-between items-end">
                     <div className="text-left">
-                      <span className="inline-block px-2 py-0.5 rounded bg-orange-500 text-white text-[8px] font-black uppercase tracking-wider mb-2">Limited Time</span>
-                      <h4 className="text-xl font-bold text-white mb-1 leading-tight">Free Espresso at TotalEnergies</h4>
-                      <p className="text-xs text-slate-400">Valid at any station highway cafe</p>
+                      <span className="inline-block px-2 py-0.5 rounded bg-orange-500 text-white text-[8px] font-black uppercase tracking-wider mb-2">{t('rewards.limitedTime')}</span>
+                      <h4 className="text-xl font-bold text-white mb-1 leading-tight">{t('rewards.hotDealTitle')}</h4>
+                      <p className="text-xs text-slate-400">{t('rewards.hotDealDesc')}</p>
                     </div>
                     <button className="h-10 px-5 bg-white text-black font-bold rounded-xl shadow-lg hover:bg-slate-200 active:scale-95 transition-all text-xs">
                       400 pts
@@ -157,7 +158,7 @@ export const Rewards: React.FC = () => {
 
             {/* Redeem Grid */}
             <section className="px-4 mb-8">
-              <h3 className="text-lg font-bold text-white mb-4 text-left">Redeem Now</h3>
+              <h3 className="text-lg font-bold text-white mb-4 text-left">{t('rewards.redeemNow')}</h3>
               <div className="grid grid-cols-2 gap-4">
                 {shopItems.map(item => (
                   <div key={item.id} className="flex flex-col bg-surface-dark rounded-3xl overflow-hidden border border-white/5 group hover:border-primary/50 transition-colors shadow-lg">
@@ -175,7 +176,7 @@ export const Rewards: React.FC = () => {
                       <h4 className="text-white font-bold text-sm mb-1 truncate">{item.title}</h4>
                       <p className="text-[10px] text-slate-500 mb-4 line-clamp-2 leading-relaxed">{item.desc}</p>
                       <button className="mt-auto w-full py-2.5 rounded-xl bg-primary/10 text-primary font-bold text-xs hover:bg-primary hover:text-black transition-all">
-                        Redeem
+                        {t('rewards.redeem')}
                       </button>
                     </div>
                   </div>
@@ -186,8 +187,8 @@ export const Rewards: React.FC = () => {
             {/* Goals */}
             <section className="px-4 mb-8">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white">Goals</h3>
-                <span className="text-[10px] font-black text-slate-500 uppercase">Keep earning</span>
+                <h3 className="text-lg font-bold text-white">{t('rewards.goals')}</h3>
+                <span className="text-[10px] font-black text-slate-500 uppercase">{t('rewards.keepEarning')}</span>
               </div>
               <div className="flex flex-col gap-3">
                 <div className="flex gap-4 p-3 bg-surface-dark rounded-2xl border border-white/5 relative overflow-hidden group">
@@ -196,11 +197,11 @@ export const Rewards: React.FC = () => {
                   </div>
                   <div className="flex-1 flex flex-col justify-center text-left">
                     <div className="flex justify-between items-start mb-1">
-                      <h4 className="text-slate-300 font-bold text-sm">Full Oil Change</h4>
+                      <h4 className="text-slate-300 font-bold text-sm">{t('rewards.oilChange')}</h4>
                       <span className="material-symbols-outlined text-slate-600 text-[18px]">lock</span>
                     </div>
                     <div className="flex justify-between text-[8px] text-slate-500 mb-2 uppercase font-black tracking-widest">
-                      <span>Progress</span>
+                      <span>{t('rewards.progress')}</span>
                       <span>2,450 / 5,000 pts</span>
                     </div>
                     <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
@@ -216,21 +217,21 @@ export const Rewards: React.FC = () => {
             {/* Wallet Savings Card */}
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 to-black p-6 shadow-2xl text-white mb-6 border border-white/5">
               <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-primary opacity-10 blur-3xl"></div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 text-left">Total Lifetime Savings</p>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 text-left">{t('rewards.lifetimeSavings')}</p>
               <div className="flex items-baseline gap-2">
                 <h2 className="text-5xl font-black tracking-tighter">350</h2>
                 <span className="text-xl font-bold text-primary">MAD</span>
               </div>
               <div className="mt-4 flex items-center gap-2 text-[10px] text-slate-400 font-bold">
                 <span className="material-symbols-outlined text-primary text-sm">trending_up</span>
-                <span>Saved 45 MAD this month</span>
+                <span>{t('rewards.savedThisMonth')}</span>
               </div>
             </div>
 
             {/* Segmented Control */}
             <div className="p-1 bg-surface-dark rounded-2xl flex mb-6 border border-white/5">
-              <button className="flex-1 py-2 text-xs font-black rounded-xl bg-white text-black shadow-lg">Active</button>
-              <button className="flex-1 py-2 text-xs font-black text-slate-500">History</button>
+              <button className="flex-1 py-2 text-xs font-black rounded-xl bg-white text-black shadow-lg">{t('rewards.active')}</button>
+              <button className="flex-1 py-2 text-xs font-black text-slate-500">{t('rewards.history')}</button>
             </div>
 
             {/* Vouchers List */}
@@ -254,7 +255,7 @@ export const Rewards: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      <span className="text-[8px] font-black text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-full uppercase tracking-widest">Expires soon</span>
+                      <span className="text-[8px] font-black text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-full uppercase tracking-widest">{t('rewards.expiresSoon')}</span>
                       <span className="material-symbols-outlined text-slate-600 transition-transform duration-300" style={{ transform: expandedVoucher === v.id ? 'rotate(180deg)' : 'none' }}>expand_more</span>
                     </div>
                   </div>
@@ -262,7 +263,7 @@ export const Rewards: React.FC = () => {
                   {expandedVoucher === v.id && (
                     <div className="bg-black/20 px-6 pb-8 pt-4 animate-slide-up border-t border-white/5">
                       <div className="flex flex-col items-center gap-6">
-                        <p className="text-xs text-slate-500 font-medium text-center leading-relaxed">Present this QR code to the station attendant before payment.</p>
+                        <p className="text-xs text-slate-500 font-medium text-center leading-relaxed">{t('rewards.presentQr')}</p>
                         
                         {/* QR Code Container */}
                         <div className="bg-white p-4 rounded-3xl shadow-2xl w-48 h-48 flex items-center justify-center relative border-4 border-primary/20">
@@ -277,14 +278,14 @@ export const Rewards: React.FC = () => {
 
                         <div className="w-full space-y-4">
                           <div className="flex items-center justify-between bg-surface-darker px-5 py-3 rounded-2xl border border-white/5">
-                            <span className="text-[10px] text-slate-500 font-black tracking-widest uppercase">Voucher Code</span>
+                            <span className="text-[10px] text-slate-500 font-black tracking-widest uppercase">{t('rewards.voucherCode')}</span>
                             <span className="font-mono font-bold text-white tracking-widest">{v.code}</span>
                             <button className="text-primary active:scale-90 transition-transform">
                               <span className="material-symbols-outlined text-[20px]">content_copy</span>
                             </button>
                           </div>
                           <button className="w-full py-4 bg-primary text-background-dark font-black rounded-2xl shadow-xl shadow-primary/20 active:scale-95 transition-all text-sm uppercase tracking-widest">
-                            Mark as Used
+                            {t('rewards.markAsUsed')}
                           </button>
                         </div>
                       </div>
@@ -298,12 +299,12 @@ export const Rewards: React.FC = () => {
             {MOCK_VOUCHERS.length === 0 && (
               <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
                 <span className="material-symbols-outlined text-6xl mb-4">savings</span>
-                <p className="text-slate-400 font-bold">No active vouchers yet</p>
+                <p className="text-slate-400 font-bold">{t('rewards.noVouchers')}</p>
                 <button 
                   onClick={() => setActiveView('shop')}
                   className="mt-4 text-primary text-xs font-black uppercase tracking-widest"
                 >
-                  Visit the Shop
+                  {t('rewards.visitShop')}
                 </button>
               </div>
             )}

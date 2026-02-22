@@ -1,7 +1,8 @@
-
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const SecuritySettings: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useLanguage();
   const [faEnabled, setFaEnabled] = useState(true);
   const [faceId, setFaceId] = useState(false);
 
@@ -11,13 +12,13 @@ export const SecuritySettings: React.FC<{ onBack: () => void }> = ({ onBack }) =
         <button onClick={onBack} className="size-11 rounded-2xl bg-surface-dark border border-white/5 flex items-center justify-center text-white">
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
-        <h1 className="text-xl font-black">Security</h1>
+        <h1 className="text-xl font-black">{t('securitySettings.title')}</h1>
         <div className="size-11" />
       </header>
 
       <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-8">
         <section className="space-y-4">
-          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Authentication</h2>
+          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">{t('securitySettings.auth')}</h2>
           <div className="bg-surface-dark rounded-[2rem] border border-white/5 overflow-hidden">
              <div className="p-5 flex items-center justify-between border-b border-white/5">
                 <div className="flex items-center gap-4">
@@ -25,8 +26,8 @@ export const SecuritySettings: React.FC<{ onBack: () => void }> = ({ onBack }) =
                       <span className="material-symbols-outlined">password</span>
                    </div>
                    <div>
-                     <p className="text-sm font-bold text-white">Change Password</p>
-                     <p className="text-[10px] text-slate-500 font-medium">Last changed 3 months ago</p>
+                     <p className="text-sm font-bold text-white">{t('securitySettings.changePass')}</p>
+                     <p className="text-[10px] text-slate-500 font-medium">{t('securitySettings.lastChanged')}</p>
                    </div>
                 </div>
                 <span className="material-symbols-outlined text-slate-600">chevron_right</span>
@@ -38,8 +39,8 @@ export const SecuritySettings: React.FC<{ onBack: () => void }> = ({ onBack }) =
                       <span className="material-symbols-outlined">phonelink_lock</span>
                    </div>
                    <div>
-                     <p className="text-sm font-bold text-white">Two-Factor (2FA)</p>
-                     <p className="text-[10px] text-slate-500 font-medium">Highly Recommended</p>
+                     <p className="text-sm font-bold text-white">{t('securitySettings.twoFactor')}</p>
+                     <p className="text-[10px] text-slate-500 font-medium">{t('securitySettings.highlyRec')}</p>
                    </div>
                 </div>
                 <button 
@@ -53,15 +54,15 @@ export const SecuritySettings: React.FC<{ onBack: () => void }> = ({ onBack }) =
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Biometrics</h2>
+          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">{t('securitySettings.biometrics')}</h2>
           <div className="bg-surface-dark rounded-[2rem] border border-white/5 p-5 flex items-center justify-between">
              <div className="flex items-center gap-4">
                 <div className="size-10 bg-white/5 rounded-xl flex items-center justify-center text-orange-400">
                    <span className="material-symbols-outlined">fingerprint</span>
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-white">FaceID / Fingerprint</p>
-                  <p className="text-[10px] text-slate-500 font-medium">Fast login and reporting</p>
+                  <p className="text-sm font-bold text-white">{t('securitySettings.faceId')}</p>
+                  <p className="text-[10px] text-slate-500 font-medium">{t('securitySettings.fastLogin')}</p>
                 </div>
              </div>
              <button 

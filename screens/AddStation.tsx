@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface AddStationProps {
   location: { lat: number; lng: number } | null;
@@ -7,6 +8,7 @@ interface AddStationProps {
 }
 
 export const AddStation: React.FC<AddStationProps> = ({ location, onBack, onComplete }) => {
+  const { t } = useLanguage();
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedBrand, setSelectedBrand] = useState<string>('');
   const [priceStr, setPriceStr] = useState<string>("13.50");
@@ -38,8 +40,8 @@ export const AddStation: React.FC<AddStationProps> = ({ location, onBack, onComp
           <span className="material-symbols-outlined text-2xl">arrow_back</span>
         </button>
         <div className="flex flex-col items-center">
-          <h1 className="text-lg font-black uppercase tracking-widest text-white">Add New Station</h1>
-          <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Pioneer Reward: +200 PTS</span>
+          <h1 className="text-lg font-black uppercase tracking-widest text-white">{t('addStation.title')}</h1>
+          <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{t('addStation.pioneerReward')}</span>
         </div>
         <div className="w-12" />
       </header>
@@ -47,8 +49,8 @@ export const AddStation: React.FC<AddStationProps> = ({ location, onBack, onComp
       <main className="flex-1 overflow-y-auto no-scrollbar px-6 py-8 flex flex-col">
         {step === 1 ? (
           <div className="flex flex-col flex-1 animate-fadeIn">
-            <h2 className="text-2xl font-black text-white mb-2">Select Brand</h2>
-            <p className="text-slate-400 text-sm mb-8">What gas station is located here?</p>
+            <h2 className="text-2xl font-black text-white mb-2">{t('addStation.selectBrand')}</h2>
+            <p className="text-slate-400 text-sm mb-8">{t('addStation.whatStation')}</p>
             
             <div className="grid grid-cols-2 gap-4 mb-auto">
               {brands.map(b => (
@@ -79,7 +81,7 @@ export const AddStation: React.FC<AddStationProps> = ({ location, onBack, onComp
                 selectedBrand ? 'bg-primary text-background-dark shadow-[0_10px_30px_rgba(59,130,246,0.3)] hover:scale-[1.02]' : 'bg-surface-dark text-slate-500 cursor-not-allowed'
               }`}
             >
-              Next Step <span className="material-symbols-outlined">arrow_forward</span>
+              {t('addStation.nextStep')} <span className="material-symbols-outlined">arrow_forward</span>
             </button>
           </div>
         ) : (
@@ -89,7 +91,7 @@ export const AddStation: React.FC<AddStationProps> = ({ location, onBack, onComp
                 <span className="text-slate-900 font-black text-sm uppercase">{selectedBrand.substring(0, 2)}</span>
               </div>
               <div>
-                <h3 className="font-black text-white text-lg">{selectedBrand} Station</h3>
+                <h3 className="font-black text-white text-lg">{selectedBrand} {t('addStation.station')}</h3>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1">
                   <span className="material-symbols-outlined text-[12px]">my_location</span>
                   Lat: {location?.lat.toFixed(4)}, Lng: {location?.lng.toFixed(4)}
@@ -97,14 +99,14 @@ export const AddStation: React.FC<AddStationProps> = ({ location, onBack, onComp
               </div>
             </div>
 
-            <h2 className="text-2xl font-black text-white text-center mb-6">Current Diesel Price</h2>
+            <h2 className="text-2xl font-black text-white text-center mb-6">{t('addStation.currentDieselPrice')}</h2>
             
             <div className="flex justify-center mb-8">
               <div className="flex flex-col items-center">
                 <span className="text-[72px] font-black tracking-tighter leading-none text-white tabular-nums">
                   {priceStr}
                 </span>
-                <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mt-2 opacity-70">MAD / Liter</span>
+                <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mt-2 opacity-70">{t('addStation.madLiter')}</span>
               </div>
             </div>
 
@@ -127,7 +129,7 @@ export const AddStation: React.FC<AddStationProps> = ({ location, onBack, onComp
               className="w-full h-16 mt-8 bg-accent-gold text-background-dark font-black text-lg rounded-2xl shadow-[0_10px_30px_rgba(251,191,36,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
               <span className="material-symbols-outlined font-black">flag</span>
-              Claim Pioneer Reward
+              {t('addStation.claimReward')}
             </button>
           </div>
         )}

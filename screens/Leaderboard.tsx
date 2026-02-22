@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { MOCK_USER, MOCK_LOCAL_LEADERBOARD } from '../constants';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const Leaderboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'local' | 'global'>('local');
 
   const globalRankings = [
@@ -25,7 +27,7 @@ export const Leaderboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <button onClick={onBack} className="size-11 rounded-2xl bg-surface-dark border border-white/5 flex items-center justify-center text-white">
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
-          <h1 className="text-xl font-black">Top Reporters</h1>
+          <h1 className="text-xl font-black">{t('leaderboard.topReporters')}</h1>
           <div className="size-11" />
         </div>
         
@@ -35,13 +37,13 @@ export const Leaderboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             onClick={() => setActiveTab('local')}
             className={`flex-1 py-2 text-xs font-black rounded-xl transition-all ${activeTab === 'local' ? 'bg-primary text-background-dark shadow-lg' : 'text-slate-500'}`}
           >
-            Maarif (Local)
+            {t('leaderboard.localTab')}
           </button>
           <button 
             onClick={() => setActiveTab('global')}
             className={`flex-1 py-2 text-xs font-black rounded-xl transition-all ${activeTab === 'global' ? 'bg-primary text-background-dark shadow-lg' : 'text-slate-500'}`}
           >
-            Morocco (Global)
+            {t('leaderboard.globalTab')}
           </button>
         </div>
       </header>
@@ -60,8 +62,8 @@ export const Leaderboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         {/* List Section */}
         <div className="px-6 space-y-3">
           <div className="flex justify-between items-end mb-4 px-2">
-             <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">The Rest of the pack</h2>
-             <p className="text-[10px] font-bold text-primary">Updated 5m ago</p>
+             <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('leaderboard.restOfPack')}</h2>
+             <p className="text-[10px] font-bold text-primary">{t('leaderboard.updatedAgo')}</p>
           </div>
 
           {currentRankings.map((user, index) => (
@@ -89,9 +91,9 @@ export const Leaderboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                <img src="https://i.pravatar.cc/100?u=me" className="size-full rounded-full" alt="Me" />
              </div>
              <div>
-               <p className="font-black text-base leading-tight">Your Rank</p>
+               <p className="font-black text-base leading-tight">{t('leaderboard.yourRank')}</p>
                <p className="text-[10px] font-black uppercase opacity-70">
-                 {activeTab === 'local' ? 'Top 1% in Maarif' : 'Top 12% globally'}
+                 {activeTab === 'local' ? t('leaderboard.topLocal') : t('leaderboard.topGlobal')}
                </p>
              </div>
            </div>
@@ -102,7 +104,7 @@ export const Leaderboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
              {activeTab === 'global' && (
                 <div className="flex items-center gap-1 justify-end mt-1">
                   <span className="material-symbols-outlined text-[12px] font-black">arrow_upward</span>
-                  <span className="text-[10px] font-black">12 spots</span>
+                  <span className="text-[10px] font-black">12 {t('leaderboard.spots')}</span>
                 </div>
              )}
            </div>

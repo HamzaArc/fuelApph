@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface ScanFlowProps {
   onComplete: (price: number, type: string) => void;
@@ -7,6 +8,7 @@ interface ScanFlowProps {
 }
 
 export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel, onFallback }) => {
+  const { t } = useLanguage();
   const [step, setStep] = useState<'camera' | 'processing' | 'verify'>('camera');
   const [extractedData, setExtractedData] = useState<{ price: number; fuelType: string } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -75,7 +77,7 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel, onFall
               <button onClick={onCancel} className="size-10 bg-black/40 rounded-full flex items-center justify-center text-white">
                 <span className="material-symbols-outlined">close</span>
               </button>
-              <div className="px-3 py-1 bg-primary text-background-dark rounded-full text-xs font-bold">Point at price board</div>
+              <div className="px-3 py-1 bg-primary text-background-dark rounded-full text-xs font-bold">{t('scanFlow.pointBoard')}</div>
               <div className="w-10" />
             </div>
 
@@ -90,7 +92,7 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel, onFall
             </div>
 
             <div className="flex flex-col items-center gap-8 pointer-events-auto">
-              <p className="text-white/60 text-sm text-center">AI will automatically detect fuel and prices</p>
+              <p className="text-white/60 text-sm text-center">{t('scanFlow.aiDetect')}</p>
               <button 
                 onClick={handleCapture}
                 className="size-20 rounded-full border-4 border-white flex items-center justify-center p-1 mb-8"
@@ -111,34 +113,34 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel, onFall
               <span className="material-symbols-outlined text-5xl">document_scanner</span>
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Analyzing Data</h2>
-          <p className="text-slate-400">If glare blocks the view, we'll switch to manual entry...</p>
+          <h2 className="text-2xl font-bold text-white mb-2">{t('scanFlow.analyzing')}</h2>
+          <p className="text-slate-400">{t('scanFlow.glareFallback')}</p>
         </div>
       )}
 
       {step === 'verify' && extractedData && (
         <div className="flex-1 flex flex-col bg-background-dark p-6 pt-12">
-          <h2 className="text-3xl font-extrabold text-white mb-2 text-center">Verify Details</h2>
-          <p className="text-slate-400 text-center mb-8">Confirm the information detected is correct</p>
+          <h2 className="text-3xl font-extrabold text-white mb-2 text-center">{t('scanFlow.verifyDetails')}</h2>
+          <p className="text-slate-400 text-center mb-8">{t('scanFlow.confirmInfo')}</p>
           
           <div className="bg-surface-dark rounded-2xl p-6 border border-primary/20 space-y-6 shadow-xl mb-auto">
             <div>
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Detected Fuel</label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">{t('scanFlow.detectedFuel')}</label>
               <div className="flex gap-2">
-                {['Diesel', 'Sans Plomb', 'Premium'].map(t => (
+                {['Diesel', 'Sans Plomb', 'Premium'].map(type => (
                   <button 
-                    key={t}
-                    onClick={() => setExtractedData({...extractedData, fuelType: t})}
-                    className={`flex-1 py-3 rounded-xl border font-bold text-sm transition-all ${extractedData.fuelType === t ? 'bg-primary border-primary text-background-dark' : 'bg-surface-darker border-white/5 text-slate-400'}`}
+                    key={type}
+                    onClick={() => setExtractedData({...extractedData, fuelType: type})}
+                    className={`flex-1 py-3 rounded-xl border font-bold text-sm transition-all ${extractedData.fuelType === type ? 'bg-primary border-primary text-background-dark' : 'bg-surface-darker border-white/5 text-slate-400'}`}
                   >
-                    {t}
+                    {type === 'Diesel' ? t('station.diesel') : type === 'Sans Plomb' ? t('station.sansPlomb') : t('station.premium')}
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Price Per Liter (MAD)</label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">{t('scanFlow.pricePerLiter')}</label>
               <div className="flex items-center gap-4">
                 <button 
                   onClick={() => adjustPrice(-0.01)}
@@ -156,7 +158,7 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel, onFall
                     className="w-full bg-surface-darker border-2 border-primary/30 rounded-2xl py-4 text-4xl font-extrabold text-white text-center focus:border-primary focus:ring-0 tabular-nums"
                   />
                   <div className="absolute -bottom-6 left-0 right-0 text-center">
-                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Tap to type or use +/-</span>
+                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{t('scanFlow.tapToType')}</span>
                   </div>
                 </div>
 
@@ -188,13 +190,13 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel, onFall
               className="w-full h-16 bg-primary hover:bg-primary-dark text-background-dark font-bold text-xl rounded-2xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <span className="material-symbols-outlined">check_circle</span>
-              Looks Good, Submit
+              {t('scanFlow.looksGood')}
             </button>
             <button 
               onClick={onFallback}
               className="w-full py-4 text-slate-500 font-bold hover:text-white transition-colors"
             >
-              Edit Manually
+              {t('scanFlow.editManually')}
             </button>
           </div>
         </div>

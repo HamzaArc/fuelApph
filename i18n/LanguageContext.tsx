@@ -133,7 +133,198 @@ const en: Translations = {
     'ATM': 'ATM',
     'Car Wash': 'Car Wash',
     'EV Charge': 'EV Charge'
-  }
+  },
+  scanFlow: {
+    pointBoard: 'Point at price board',
+    aiDetect: 'AI will automatically detect fuel and prices',
+    analyzing: 'Analyzing Data',
+    glareFallback: "If glare blocks the view, we'll switch to manual entry...",
+    verifyDetails: 'Verify Details',
+    confirmInfo: 'Confirm the information detected is correct',
+    detectedFuel: 'Detected Fuel',
+    pricePerLiter: 'Price Per Liter (MAD)',
+    tapToType: 'Tap to type or use +/-',
+    looksGood: 'Looks Good, Submit',
+    editManually: 'Edit Manually'
+  },
+  manualReport: {
+    reportPrice: 'Report Price',
+    confirmPrice: 'Confirm Price',
+    change: 'Change'
+  },
+  voiceReport: {
+    title: 'Voice Reporter',
+    listening: 'Listening...',
+    verifyResult: 'Verify Result',
+    instruction: 'Tell me the fuel type and price',
+    example: '(e.g., "Diesel 12.50")',
+    adjustManual: 'Adjust details manually if AI made a mistake',
+    fuelType: 'Fuel Type',
+    priceMad: 'Price (MAD)',
+    tapToAdjust: 'Tap +/- to adjust',
+    retake: 'Retake',
+    confirm: 'Confirm'
+  },
+  addStation: {
+    title: 'Add New Station',
+    pioneerReward: 'Pioneer Reward: +200 PTS',
+    selectBrand: 'Select Brand',
+    whatStation: 'What gas station is located here?',
+    nextStep: 'Next Step',
+    station: 'Station',
+    currentDieselPrice: 'Current Diesel Price',
+    madLiter: 'MAD / Liter',
+    claimReward: 'Claim Pioneer Reward'
+  },
+  contributionSuccess: {
+    stationAdded: 'STATION ADDED!',
+    priceVerified: 'PRICE VERIFIED!',
+    pioneerMsg: 'You are a community pioneer',
+    thanksMsg: 'Thanks for keeping prices accurate',
+    calculating: 'Calculating Reward...',
+    pioneerBonus: 'Pioneer Bonus',
+    mysteryReward: 'Mystery Reward',
+    contributionLogged: 'Contribution Logged',
+    contributionVerified: 'Contribution Verified',
+    wait: 'Wait for it...',
+    returnToMap: 'Awesome, Return to Map'
+  },
+  rewards: {
+    shopTitle: 'Rewards Shop',
+    walletTitle: 'My Wallet',
+    wallet: 'Wallet',
+    shop: 'Shop',
+    availableBalance: 'Available Balance',
+    silverMember: 'Silver Member',
+    goldTarget: 'Gold (3,000 pts)',
+    hotDeal: 'Hot Deal',
+    limitedTime: 'Limited Time',
+    hotDealTitle: 'Free Espresso at TotalEnergies',
+    hotDealDesc: 'Valid at any station highway cafe',
+    redeemNow: 'Redeem Now',
+    redeem: 'Redeem',
+    goals: 'Goals',
+    keepEarning: 'Keep earning',
+    oilChange: 'Full Oil Change',
+    progress: 'Progress',
+    lifetimeSavings: 'Total Lifetime Savings',
+    savedThisMonth: 'Saved 45 MAD this month',
+    active: 'Active',
+    history: 'History',
+    expiresSoon: 'Expires soon',
+    presentQr: 'Present this QR code to the station attendant before payment.',
+    voucherCode: 'Voucher Code',
+    markAsUsed: 'Mark as Used',
+    noVouchers: 'No active vouchers yet',
+    visitShop: 'Visit the Shop',
+    cats: { all: 'All', fuel: 'Fuel', wash: 'Car Wash', food: 'Food' },
+    items: {
+      washTitle: 'Basic Car Wash', washDesc: 'Exterior wash and tire shine at participating stations.',
+      fuelTitle: '50 DH Fuel Voucher', fuelDesc: 'Discount on your next fill-up at Afriquia.',
+      foodTitle: 'Breakfast Combo', foodDesc: 'Coffee and croissant at Shell Select.',
+      fluidTitle: 'Screen Wash 1L', fluidDesc: 'High quality screen wash fluid.'
+    }
+  },
+  leaderboard: {
+    topReporters: 'Top Reporters',
+    localTab: 'Maarif (Local)',
+    globalTab: 'Morocco (Global)',
+    restOfPack: 'The Rest of the pack',
+    updatedAgo: 'Updated 5m ago',
+    yourRank: 'Your Rank',
+    topLocal: 'Top 1% in Maarif',
+    topGlobal: 'Top 12% globally',
+    spots: 'spots'
+  },
+  referrals: {
+    title: 'Invite Friends',
+    shareSavings: 'Share the Savings.',
+    desc1: 'Both you and your friend get ',
+    desc2: '100 points',
+    desc3: ' when they scan their first receipt.',
+    step1: 'Send link',
+    step2: 'They scan',
+    step3: 'Both earn',
+    yourCode: 'Your personal code',
+    inviteNow: 'Invite Now'
+  },
+  vehicleLog: {
+    title: 'My Vehicle',
+    newLog: 'New Fuel Log',
+    avgUsage: 'Avg. Usage',
+    lower: 'lower',
+    totalCost: 'Total Cost',
+    last30Days: 'Last 30 days',
+    efficiencyTrend: 'Efficiency Trend',
+    sixMonths: '6 Months',
+    recentLogs: 'Recent Logs',
+    months: { may: 'May', aug: 'Aug', oct: 'Oct' }
+  },
+  notifications: {
+    title: 'Activity',
+    markAll: 'Mark All',
+    today: 'Today',
+    yesterday: 'Yesterday',
+    notifs: {
+      dropTitle: 'Price Drop Alert', dropMsg: 'Shell prices dropped -0.50 MAD near Casablanca center.',
+      rewardTitle: 'Report Verified!', rewardMsg: 'Your submission for Afriquia was verified. You earned +50 points.',
+      rankTitle: 'Rank Up!', rankMsg: 'You entered the top 100 reporters in Rabat. Keep going!'
+    }
+  },
+  badges: {
+    title: 'My Journey',
+    totalBadges: 'Total Badges',
+    eliteTier: 'Elite Tier',
+    list: {
+      b1: 'First Scan', b2: 'Watcher', b3: 'Early Bird',
+      b4: 'Highway Hero', b5: 'Atlas Explorer', b6: 'Night Owl',
+      b7: 'Verified Scout', b8: 'Trend Setter', b9: 'Community Pillar'
+    }
+  },
+  helpCenter: {
+    title: 'Help Center',
+    search: 'Search topics...',
+    faqTitle: 'Frequent Questions',
+    faqs: {
+      q1: 'How do points work?', a1: 'Earn points by reporting fuel prices. 10 points per report, 50 if verified.',
+      q2: 'Where can I use my vouchers?', a2: 'Vouchers are valid at all participating Shell, Afriquia, and TotalEnergies stations.',
+      q3: 'Reporting incorrect prices?', a3: 'Users with high trust scores get verified instantly. Others require community confirmation.'
+    },
+    stillNeedHelp: 'Still need help?',
+    support247: 'Our support team is available 24/7',
+    contactSupport: 'Contact Support'
+  },
+  vehicleSettings: {
+    title: 'Vehicle Settings',
+    category: 'Vehicle Category',
+    personal: 'Personal',
+    taxi: 'Taxi',
+    truck: 'Truck',
+    coreInfo: 'Core Info',
+    modelName: 'Model Name',
+    odometer: 'Odometer',
+    primaryFuel: 'Primary Fuel',
+    saveChanges: 'Save Changes'
+  },
+  paymentMethods: {
+    title: 'Payments',
+    savedCards: 'Saved Cards',
+    expires: 'Expires',
+    primary: 'Primary',
+    addNew: 'Add New Payment Method',
+    digitalWallets: 'Digital Wallets'
+  },
+  securitySettings: {
+    title: 'Security',
+    auth: 'Authentication',
+    changePass: 'Change Password',
+    lastChanged: 'Last changed 3 months ago',
+    twoFactor: 'Two-Factor (2FA)',
+    highlyRec: 'Highly Recommended',
+    biometrics: 'Biometrics',
+    faceId: 'FaceID / Fingerprint',
+    fastLogin: 'Fast login and reporting'
+  },
 };
 
 const fr: Translations = {
@@ -263,7 +454,198 @@ const fr: Translations = {
     'ATM': 'GAB / Retrait',
     'Car Wash': 'Lavage Auto',
     'EV Charge': 'Borne VE'
-  }
+  },
+  scanFlow: {
+    pointBoard: 'Pointez vers le panneau des prix',
+    aiDetect: 'L\'IA détectera automatiquement le carburant et les prix',
+    analyzing: 'Analyse des données',
+    glareFallback: "En cas de reflet, nous passerons en saisie manuelle...",
+    verifyDetails: 'Vérifier les détails',
+    confirmInfo: 'Confirmez que les informations détectées sont correctes',
+    detectedFuel: 'Carburant détecté',
+    pricePerLiter: 'Prix au litre (MAD)',
+    tapToType: 'Appuyez pour taper ou utilisez +/-',
+    looksGood: 'Tout est bon, Soumettre',
+    editManually: 'Modifier manuellement'
+  },
+  manualReport: {
+    reportPrice: 'Signaler un prix',
+    confirmPrice: 'Confirmer le prix',
+    change: 'Modifier'
+  },
+  voiceReport: {
+    title: 'Rapport Vocal',
+    listening: 'Écoute en cours...',
+    verifyResult: 'Vérifier le résultat',
+    instruction: 'Indiquez le type de carburant et le prix',
+    example: '(ex: "Gasoil 12.50")',
+    adjustManual: 'Ajustez manuellement si l\'IA s\'est trompée',
+    fuelType: 'Type de carburant',
+    priceMad: 'Prix (MAD)',
+    tapToAdjust: 'Appuyez sur +/- pour ajuster',
+    retake: 'Recommencer',
+    confirm: 'Confirmer'
+  },
+  addStation: {
+    title: 'Ajouter une station',
+    pioneerReward: 'Récompense Pionnier : +200 PTS',
+    selectBrand: 'Sélectionner la marque',
+    whatStation: 'Quelle station-service se trouve ici ?',
+    nextStep: 'Étape suivante',
+    station: 'Station',
+    currentDieselPrice: 'Prix actuel du Gasoil',
+    madLiter: 'MAD / Litre',
+    claimReward: 'Réclamer la récompense'
+  },
+  contributionSuccess: {
+    stationAdded: 'STATION AJOUTÉE !',
+    priceVerified: 'PRIX VÉRIFIÉ !',
+    pioneerMsg: 'Vous êtes un pionnier de la communauté',
+    thanksMsg: 'Merci de maintenir les prix à jour',
+    calculating: 'Calcul de la récompense...',
+    pioneerBonus: 'Bonus Pionnier',
+    mysteryReward: 'Récompense Mystère',
+    contributionLogged: 'Contribution enregistrée',
+    contributionVerified: 'Contribution vérifiée',
+    wait: 'Patientez...',
+    returnToMap: 'Génial, Retour à la carte'
+  },
+  rewards: {
+    shopTitle: 'Boutique de Récompenses',
+    walletTitle: 'Mon Portefeuille',
+    wallet: 'Portefeuille',
+    shop: 'Boutique',
+    availableBalance: 'Solde Disponible',
+    silverMember: 'Membre Argent',
+    goldTarget: 'Or (3 000 pts)',
+    hotDeal: 'Bon Plan',
+    limitedTime: 'Durée Limitée',
+    hotDealTitle: 'Espresso Gratuit chez TotalEnergies',
+    hotDealDesc: 'Valable dans tous les cafés sur autoroute',
+    redeemNow: 'Échanger Maintenant',
+    redeem: 'Échanger',
+    goals: 'Objectifs',
+    keepEarning: 'Continuez à gagner',
+    oilChange: 'Vidange Complète',
+    progress: 'Progression',
+    lifetimeSavings: 'Économies Totales',
+    savedThisMonth: '45 MAD économisés ce mois-ci',
+    active: 'Actifs',
+    history: 'Historique',
+    expiresSoon: 'Expire bientôt',
+    presentQr: 'Présentez ce QR code au pompiste avant le paiement.',
+    voucherCode: 'Code du Bon',
+    markAsUsed: 'Marquer comme utilisé',
+    noVouchers: 'Aucun bon actif pour le moment',
+    visitShop: 'Visiter la Boutique',
+    cats: { all: 'Tout', fuel: 'Carburant', wash: 'Lavage', food: 'Nourriture' },
+    items: {
+      washTitle: 'Lavage Auto Basique', washDesc: 'Lavage extérieur et brillant pneus dans les stations participantes.',
+      fuelTitle: 'Bon Carburant 50 DH', fuelDesc: 'Réduction sur votre prochain plein chez Afriquia.',
+      foodTitle: 'Menu Petit-déj', foodDesc: 'Café et croissant chez Shell Select.',
+      fluidTitle: 'Lave-glace 1L', fluidDesc: 'Liquide lave-glace haute qualité.'
+    }
+  },
+  leaderboard: {
+    topReporters: 'Meilleurs Contributeurs',
+    localTab: 'Maârif (Local)',
+    globalTab: 'Maroc (Global)',
+    restOfPack: 'Le reste du classement',
+    updatedAgo: 'Mis à jour il y a 5m',
+    yourRank: 'Votre Rang',
+    topLocal: 'Top 1% à Maârif',
+    topGlobal: 'Top 12% mondialement',
+    spots: 'places'
+  },
+  referrals: {
+    title: 'Inviter des Amis',
+    shareSavings: 'Partagez les Économies.',
+    desc1: 'Vous et votre ami obtenez ',
+    desc2: '100 points',
+    desc3: ' lorsqu\'ils scannent leur premier reçu.',
+    step1: 'Envoyer le lien',
+    step2: 'Ils scannent',
+    step3: 'Vous gagnez',
+    yourCode: 'Votre code personnel',
+    inviteNow: 'Inviter Maintenant'
+  },
+  vehicleLog: {
+    title: 'Mon Véhicule',
+    newLog: 'Nouveau Plein',
+    avgUsage: 'Conso Moyenne',
+    lower: 'en baisse',
+    totalCost: 'Coût Total',
+    last30Days: '30 derniers jours',
+    efficiencyTrend: 'Tendance d\'efficacité',
+    sixMonths: '6 Mois',
+    recentLogs: 'Pleins Récents',
+    months: { may: 'Mai', aug: 'Aoû', oct: 'Oct' }
+  },
+  notifications: {
+    title: 'Activité',
+    markAll: 'Tout marquer',
+    today: 'Aujourd\'hui',
+    yesterday: 'Hier',
+    notifs: {
+      dropTitle: 'Alerte Baisse de Prix', dropMsg: 'Les prix Shell ont baissé de -0.50 MAD près du centre de Casablanca.',
+      rewardTitle: 'Signalement Vérifié !', rewardMsg: 'Votre signalement pour Afriquia a été vérifié. Vous avez gagné +50 points.',
+      rankTitle: 'Niveau Supérieur !', rankMsg: 'Vous êtes entré dans le top 100 des contributeurs à Rabat. Continuez !'
+    }
+  },
+  badges: {
+    title: 'Mon Parcours',
+    totalBadges: 'Total des Badges',
+    eliteTier: 'Niveau Élite',
+    list: {
+      b1: 'Premier Scan', b2: 'Observateur', b3: 'Lève-tôt',
+      b4: 'Héros d\'Autoroute', b5: 'Explorateur de l\'Atlas', b6: 'Oiseau de Nuit',
+      b7: 'Éclaireur Vérifié', b8: 'Créateur de Tendance', b9: 'Pilier Communautaire'
+    }
+  },
+  helpCenter: {
+    title: 'Centre d\'Aide',
+    search: 'Rechercher des sujets...',
+    faqTitle: 'Questions Fréquentes',
+    faqs: {
+      q1: 'Comment fonctionnent les points ?', a1: 'Gagnez des points en signalant les prix. 10 pts par signalement, 50 si vérifié.',
+      q2: 'Où utiliser mes bons ?', a2: 'Les bons sont valables dans les stations Shell, Afriquia et TotalEnergies participantes.',
+      q3: 'Prix incorrects ?', a3: 'Les utilisateurs avec un score de confiance élevé sont vérifiés instantanément. Les autres nécessitent une confirmation communautaire.'
+    },
+    stillNeedHelp: 'Encore besoin d\'aide ?',
+    support247: 'Notre équipe de support est disponible 24/7',
+    contactSupport: 'Contacter le Support'
+  },
+  vehicleSettings: {
+    title: 'Paramètres du Véhicule',
+    category: 'Catégorie de Véhicule',
+    personal: 'Personnel',
+    taxi: 'Taxi',
+    truck: 'Camion',
+    coreInfo: 'Infos Principales',
+    modelName: 'Nom du Modèle',
+    odometer: 'Kilométrage',
+    primaryFuel: 'Carburant Principal',
+    saveChanges: 'Enregistrer'
+  },
+  paymentMethods: {
+    title: 'Paiements',
+    savedCards: 'Cartes Enregistrées',
+    expires: 'Expire',
+    primary: 'Principale',
+    addNew: 'Ajouter un Moyen de Paiement',
+    digitalWallets: 'Portefeuilles Numériques'
+  },
+  securitySettings: {
+    title: 'Sécurité',
+    auth: 'Authentification',
+    changePass: 'Changer le Mot de Passe',
+    lastChanged: 'Modifié il y a 3 mois',
+    twoFactor: 'Double Facteur (2FA)',
+    highlyRec: 'Hautement Recommandé',
+    biometrics: 'Biométrie',
+    faceId: 'FaceID / Empreinte',
+    fastLogin: 'Connexion et signalement rapides'
+  },
 };
 
 const translations = { en, fr };

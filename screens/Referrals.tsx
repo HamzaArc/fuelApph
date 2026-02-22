@@ -1,14 +1,15 @@
-
 import React from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const Referrals: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-col h-full bg-background-dark animate-fadeIn">
       <header className="flex items-center justify-between p-4 pt-12 z-20">
         <button onClick={onBack} className="size-11 rounded-2xl bg-surface-dark border border-white/5 flex items-center justify-center text-white">
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
-        <h1 className="text-xl font-black">Invite Friends</h1>
+        <h1 className="text-xl font-black">{t('referrals.title')}</h1>
         <div className="size-11" />
       </header>
 
@@ -22,21 +23,21 @@ export const Referrals: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               alt="Invite"
             />
           </div>
-          <h2 className="text-4xl font-black text-white leading-none mb-3">Share the Savings.</h2>
-          <p className="text-slate-400 text-lg leading-relaxed px-4">Both you and your friend get <span className="text-primary font-bold">100 points</span> when they scan their first receipt.</p>
+          <h2 className="text-4xl font-black text-white leading-none mb-3">{t('referrals.shareSavings')}</h2>
+          <p className="text-slate-400 text-lg leading-relaxed px-4">{t('referrals.desc1')}<span className="text-primary font-bold">{t('referrals.desc2')}</span>{t('referrals.desc3')}</p>
         </div>
 
         {/* 3 Step Guide */}
         <div className="grid grid-cols-3 gap-2 mb-10">
-           <Step num={1} icon="send" label="Send link" />
-           <Step num={2} icon="qr_code_scanner" label="They scan" />
-           <Step num={3} icon="card_giftcard" label="Both earn" />
+           <Step num={1} icon="send" label={t('referrals.step1')} />
+           <Step num={2} icon="qr_code_scanner" label={t('referrals.step2')} />
+           <Step num={3} icon="card_giftcard" label={t('referrals.step3')} />
         </div>
 
         {/* Code Card */}
         <div className="bg-surface-dark rounded-[2.5rem] p-8 border border-white/5 shadow-2xl relative overflow-hidden text-center">
            <div className="absolute top-0 right-0 size-24 bg-primary/10 blur-3xl" />
-           <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4">Your personal code</span>
+           <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4">{t('referrals.yourCode')}</span>
            <div className="flex items-center justify-between gap-4 bg-background-dark/50 rounded-2xl border-2 border-dashed border-white/10 p-2 pl-6 mb-8">
               <span className="text-2xl font-black tracking-widest text-white font-mono">KARIM-FS-24</span>
               <button className="bg-primary text-background-dark size-12 rounded-xl flex items-center justify-center active:scale-90 transition-transform">
@@ -45,7 +46,7 @@ export const Referrals: React.FC<{ onBack: () => void }> = ({ onBack }) => {
            </div>
            <button className="w-full h-16 bg-primary hover:bg-primary-dark text-background-dark font-black text-lg rounded-2xl shadow-xl shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3">
              <span className="material-symbols-outlined">share</span>
-             Invite Now
+             {t('referrals.inviteNow')}
            </button>
         </div>
       </div>

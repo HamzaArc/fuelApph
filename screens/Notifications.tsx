@@ -1,44 +1,45 @@
-
 import React from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const Notifications: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-col h-full bg-background-dark animate-fadeIn">
       <header className="flex items-center justify-between p-4 pt-12 z-20">
         <button onClick={onBack} className="size-11 rounded-2xl bg-surface-dark border border-white/5 flex items-center justify-center text-white">
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
-        <h1 className="text-xl font-black">Activity</h1>
-        <button className="text-primary font-black text-xs uppercase tracking-widest">Mark All</button>
+        <h1 className="text-xl font-black">{t('notifications.title')}</h1>
+        <button className="text-primary font-black text-xs uppercase tracking-widest">{t('notifications.markAll')}</button>
       </header>
 
       <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-8">
         <section>
-          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 px-2">Today</h2>
+          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 px-2">{t('notifications.today')}</h2>
           <div className="space-y-3">
             <NotifItem 
               type="price" 
-              title="Price Drop Alert" 
-              msg="Shell prices dropped -0.50 MAD near Casablanca center." 
+              title={t('notifications.notifs.dropTitle')} 
+              msg={t('notifications.notifs.dropMsg')} 
               time="2m ago" 
               unread 
             />
             <NotifItem 
               type="reward" 
-              title="Report Verified!" 
-              msg="Your submission for Afriquia was verified. You earned +50 points." 
+              title={t('notifications.notifs.rewardTitle')} 
+              msg={t('notifications.notifs.rewardMsg')} 
               time="1h ago" 
             />
           </div>
         </section>
 
         <section>
-          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 px-2">Yesterday</h2>
+          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 px-2">{t('notifications.yesterday')}</h2>
           <div className="space-y-3">
              <NotifItem 
               type="system" 
-              title="Rank Up!" 
-              msg="You entered the top 100 reporters in Rabat. Keep going!" 
+              title={t('notifications.notifs.rankTitle')} 
+              msg={t('notifications.notifs.rankMsg')} 
               time="1d ago" 
             />
           </div>

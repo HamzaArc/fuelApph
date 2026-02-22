@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import { Station } from '../types';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface ManualReportProps {
   station: Station;
@@ -9,6 +9,7 @@ interface ManualReportProps {
 }
 
 export const ManualReport: React.FC<ManualReportProps> = ({ station, onBack, onComplete }) => {
+  const { t } = useLanguage();
   const [priceStr, setPriceStr] = useState("13.49");
   const [fuelType, setFuelType] = useState('Diesel');
 
@@ -39,7 +40,7 @@ export const ManualReport: React.FC<ManualReportProps> = ({ station, onBack, onC
         <button onClick={onBack} className="flex items-center justify-center p-3 rounded-full hover:bg-white/10 transition-colors">
           <span className="material-symbols-outlined text-2xl">close</span>
         </button>
-        <h1 className="text-lg font-black uppercase tracking-widest">Report Price</h1>
+        <h1 className="text-lg font-black uppercase tracking-widest">{t('manualReport.reportPrice')}</h1>
         <button className="flex items-center justify-center p-3 rounded-full hover:bg-white/10 transition-colors text-primary">
           <span className="material-symbols-outlined text-2xl">document_scanner</span>
         </button>
@@ -60,7 +61,7 @@ export const ManualReport: React.FC<ManualReportProps> = ({ station, onBack, onC
                   : 'bg-surface-dark border-transparent text-slate-400'
               }`}
             >
-              <span className="text-base font-black uppercase tracking-tight">{type === 'Diesel' ? 'Gasoil' : 'Sans Plomb'}</span>
+              <span className="text-base font-black uppercase tracking-tight">{type === 'Diesel' ? t('station.diesel') : t('station.sansPlomb')}</span>
               {fuelType === type && (
                 <div className="absolute top-2 right-2 text-background-dark">
                   <span className="material-symbols-outlined text-sm font-black">check_circle</span>
@@ -88,7 +89,7 @@ export const ManualReport: React.FC<ManualReportProps> = ({ station, onBack, onC
                   {priceStr}
                 </span>
               </div>
-              <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mt-3 opacity-70">MAD / Liter</span>
+              <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mt-3 opacity-70">{t('map.madL')}</span>
             </div>
             
             {/* Stepper Plus */}
@@ -131,7 +132,7 @@ export const ManualReport: React.FC<ManualReportProps> = ({ station, onBack, onC
             <span className="text-[9px] text-slate-500 font-black uppercase tracking-tighter truncate mt-1">{station.location.address}</span>
           </div>
           <button className="text-[10px] font-black text-primary px-4 py-2 rounded-lg bg-primary/10 uppercase tracking-widest">
-            Change
+            {t('manualReport.change')}
           </button>
         </div>
 
@@ -140,7 +141,7 @@ export const ManualReport: React.FC<ManualReportProps> = ({ station, onBack, onC
           onClick={() => onComplete(parseFloat(priceStr), fuelType)}
           className="w-full h-18 py-5 bg-primary text-background-dark font-black text-xl rounded-3xl shadow-[0_15px_30px_rgba(59,130,246,0.3)] hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-3 mt-2 shrink-0 mb-6 uppercase tracking-widest"
         >
-          <span>Confirm Price</span>
+          <span>{t('manualReport.confirmPrice')}</span>
           <span className="material-symbols-outlined font-black">check</span>
         </button>
       </main>

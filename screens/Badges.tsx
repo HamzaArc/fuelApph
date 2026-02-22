@@ -1,17 +1,18 @@
-
 import React from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const Badges: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useLanguage();
   const badges = [
-    { id: 1, title: 'First Scan', icon: 'document_scanner', unlocked: true },
-    { id: 2, title: 'Watcher', icon: 'visibility', unlocked: true },
-    { id: 3, title: 'Early Bird', icon: 'wb_twilight', unlocked: true },
-    { id: 4, title: 'Highway Hero', icon: 'add_road', unlocked: false },
-    { id: 5, title: 'Atlas Explorer', icon: 'landscape', unlocked: false },
-    { id: 6, title: 'Night Owl', icon: 'nights_stay', unlocked: false },
-    { id: 7, title: 'Verified Scout', icon: 'verified_user', unlocked: false },
-    { id: 8, title: 'Trend Setter', icon: 'trending_up', unlocked: false },
-    { id: 9, title: 'Community Pillar', icon: 'groups', unlocked: false },
+    { id: 1, title: t('badges.list.b1'), icon: 'document_scanner', unlocked: true },
+    { id: 2, title: t('badges.list.b2'), icon: 'visibility', unlocked: true },
+    { id: 3, title: t('badges.list.b3'), icon: 'wb_twilight', unlocked: true },
+    { id: 4, title: t('badges.list.b4'), icon: 'add_road', unlocked: false },
+    { id: 5, title: t('badges.list.b5'), icon: 'landscape', unlocked: false },
+    { id: 6, title: t('badges.list.b6'), icon: 'nights_stay', unlocked: false },
+    { id: 7, title: t('badges.list.b7'), icon: 'verified_user', unlocked: false },
+    { id: 8, title: t('badges.list.b8'), icon: 'trending_up', unlocked: false },
+    { id: 9, title: t('badges.list.b9'), icon: 'groups', unlocked: false },
   ];
 
   return (
@@ -20,7 +21,7 @@ export const Badges: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <button onClick={onBack} className="size-11 rounded-2xl bg-surface-dark border border-white/5 flex items-center justify-center text-white">
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
-        <h1 className="text-xl font-black">My Journey</h1>
+        <h1 className="text-xl font-black">{t('badges.title')}</h1>
         <div className="size-11" />
       </header>
 
@@ -29,11 +30,11 @@ export const Badges: React.FC<{ onBack: () => void }> = ({ onBack }) => {
            <div className="absolute top-0 right-0 size-32 bg-primary/10 blur-3xl" />
            <div className="flex justify-between items-end mb-4">
               <div>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Total Badges</p>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">{t('badges.totalBadges')}</p>
                 <h2 className="text-4xl font-black text-white leading-none">12/45</h2>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-black text-primary uppercase">Elite Tier</p>
+                <p className="text-[10px] font-black text-primary uppercase">{t('badges.eliteTier')}</p>
               </div>
            </div>
            <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden">

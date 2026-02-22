@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Station } from '../types';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface VoiceReportProps {
   station: Station;
@@ -9,6 +9,7 @@ interface VoiceReportProps {
 }
 
 export const VoiceReport: React.FC<VoiceReportProps> = ({ station, onBack, onComplete }) => {
+  const { t } = useLanguage();
   const [isListening, setIsListening] = useState(true);
   const [transcription, setTranscription] = useState('');
   const [detectedFuel, setDetectedFuel] = useState('Diesel');
@@ -37,7 +38,7 @@ export const VoiceReport: React.FC<VoiceReportProps> = ({ station, onBack, onCom
         <button onClick={onBack} className="text-white hover:text-primary transition-colors p-3 rounded-full hover:bg-white/5">
           <span className="material-symbols-outlined !text-[28px]">close</span>
         </button>
-        <h2 className="text-white text-lg font-black tracking-wide uppercase text-center flex-1">Voice Reporter</h2>
+        <h2 className="text-white text-lg font-black tracking-wide uppercase text-center flex-1">{t('voiceReport.title')}</h2>
         <div className="w-12"></div>
       </header>
 
@@ -45,12 +46,12 @@ export const VoiceReport: React.FC<VoiceReportProps> = ({ station, onBack, onCom
         {/* Instruction */}
         <div className="text-center mb-10 shrink-0">
           <h1 className="text-white text-4xl font-black mb-3 tracking-tight">
-            {isListening ? 'Listening...' : 'Verify Result'}
+            {isListening ? t('voiceReport.listening') : t('voiceReport.verifyResult')}
           </h1>
           <p className="text-slate-400 text-base font-medium max-w-[280px] mx-auto leading-relaxed">
             {isListening 
-              ? <>Tell me the fuel type and price <br/><span className="text-primary font-black text-xs uppercase mt-2 block opacity-60">(e.g., "Diesel 12.50")</span></>
-              : "Adjust details manually if AI made a mistake"}
+              ? <>{t('voiceReport.instruction')} <br/><span className="text-primary font-black text-xs uppercase mt-2 block opacity-60">{t('voiceReport.example')}</span></>
+              : t('voiceReport.adjustManual')}
           </p>
         </div>
 
@@ -68,7 +69,7 @@ export const VoiceReport: React.FC<VoiceReportProps> = ({ station, onBack, onCom
 
         {/* Transcription */}
         <div className="w-full text-center h-16 flex items-center justify-center mb-8 shrink-0">
-          <p className="text-2xl text-slate-200 font-bold italic opacity-80">{transcription || (isListening ? "Say something..." : "")}</p>
+          <p className="text-2xl text-slate-200 font-bold italic opacity-80">{transcription || (isListening ? "..." : "")}</p>
         </div>
 
         {/* Confirmation Card with Manual Adjustments */}
@@ -77,7 +78,7 @@ export const VoiceReport: React.FC<VoiceReportProps> = ({ station, onBack, onCom
             <div className="grid grid-cols-2 gap-4 mb-6">
               {/* Manual Fuel Adjustment */}
               <div className="bg-black/30 p-4 rounded-2xl border border-white/5 text-left flex flex-col justify-between">
-                <span className="text-slate-500 text-[9px] font-black uppercase mb-2 block tracking-widest">Fuel Type</span>
+                <span className="text-slate-500 text-[9px] font-black uppercase mb-2 block tracking-widest">{t('voiceReport.fuelType')}</span>
                 <div className="flex flex-col gap-2">
                   {['Diesel', 'Sans Plomb'].map(f => (
                     <button 
@@ -85,7 +86,7 @@ export const VoiceReport: React.FC<VoiceReportProps> = ({ station, onBack, onCom
                       onClick={() => setDetectedFuel(f)}
                       className={`py-2 px-3 rounded-lg text-[10px] font-black uppercase transition-all border ${detectedFuel === f ? 'bg-primary text-background-dark border-primary' : 'bg-white/5 text-slate-400 border-white/5'}`}
                     >
-                      {f === 'Sans Plomb' ? 'S. Plomb' : f}
+                      {f === 'Diesel' ? t('station.diesel') : t('station.sansPlomb')}
                     </button>
                   ))}
                 </div>
@@ -93,7 +94,7 @@ export const VoiceReport: React.FC<VoiceReportProps> = ({ station, onBack, onCom
 
               {/* Manual Price Adjustment */}
               <div className="bg-black/30 p-4 rounded-2xl border border-white/5 text-left flex flex-col justify-between">
-                <span className="text-slate-500 text-[9px] font-black uppercase mb-2 block tracking-widest">Price (MAD)</span>
+                <span className="text-slate-500 text-[9px] font-black uppercase mb-2 block tracking-widest">{t('voiceReport.priceMad')}</span>
                 <div className="flex flex-col items-center gap-2">
                   <div className="flex items-center gap-3 w-full justify-between">
                     <button onClick={() => adjustPrice(-0.01)} className="size-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white active:scale-90 transition-all">
@@ -104,7 +105,7 @@ export const VoiceReport: React.FC<VoiceReportProps> = ({ station, onBack, onCom
                       <span className="material-symbols-outlined text-sm font-black">add</span>
                     </button>
                   </div>
-                  <div className="text-[8px] font-black text-slate-600 uppercase">Tap +/- to adjust</div>
+                  <div className="text-[8px] font-black text-slate-600 uppercase">{t('voiceReport.tapToAdjust')}</div>
                 </div>
               </div>
             </div>
@@ -117,13 +118,13 @@ export const VoiceReport: React.FC<VoiceReportProps> = ({ station, onBack, onCom
                 }} 
                 className="flex-1 py-4 rounded-2xl bg-white/5 text-white font-black text-xs uppercase border border-white/5 hover:bg-white/10 active:scale-[0.98] transition-all"
               >
-                Retake
+                {t('voiceReport.retake')}
               </button>
               <button 
                 onClick={() => onComplete(detectedPrice, detectedFuel)} 
                 className="flex-1 py-4 rounded-2xl bg-primary text-background-dark font-black text-xs uppercase shadow-xl hover:bg-blue-400 active:scale-[0.98] transition-all"
               >
-                Confirm
+                {t('voiceReport.confirm')}
               </button>
             </div>
           </div>

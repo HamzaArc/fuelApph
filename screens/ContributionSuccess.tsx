@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface ContributionSuccessProps {
   onDone: () => void;
@@ -7,6 +8,7 @@ interface ContributionSuccessProps {
 }
 
 export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone, summary, isPioneer }) => {
+  const { t } = useLanguage();
   const [isSpinning, setIsSpinning] = useState(!isPioneer);
   const [displayPoints, setDisplayPoints] = useState(0);
   
@@ -61,10 +63,10 @@ export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone
         <div className="flex flex-col items-center mb-8 mt-10">
           <div className="text-center space-y-2 mb-8">
             <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none drop-shadow-lg">
-              {isPioneer ? 'STATION ADDED!' : 'PRICE VERIFIED!'}
+              {isPioneer ? t('contributionSuccess.stationAdded') : t('contributionSuccess.priceVerified')}
             </h1>
             <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">
-              {isPioneer ? 'You are a community pioneer' : 'Thanks for keeping prices accurate'}
+              {isPioneer ? t('contributionSuccess.pioneerMsg') : t('contributionSuccess.thanksMsg')}
             </p>
           </div>
 
@@ -75,7 +77,7 @@ export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone
               : 'border-accent-gold/80 bg-gradient-to-br from-surface-dark to-surface-darker shadow-[0_0_80px_rgba(251,191,36,0.4)] scale-105'
           }`}>
             <span className={`text-sm font-black uppercase tracking-[0.3em] mb-2 transition-colors ${isSpinning ? 'text-primary' : 'text-accent-gold'}`}>
-              {isSpinning ? 'Calculating Reward...' : (isPioneer ? 'Pioneer Bonus' : 'Mystery Reward')}
+              {isSpinning ? t('contributionSuccess.calculating') : (isPioneer ? t('contributionSuccess.pioneerBonus') : t('contributionSuccess.mysteryReward'))}
             </span>
             <div className="flex items-baseline gap-2 tabular-nums">
               <span className={`text-[80px] font-black leading-none tracking-tighter transition-colors ${
@@ -104,10 +106,10 @@ export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone
           </div>
           <div className="flex flex-col text-left overflow-hidden">
             <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1 opacity-70">
-              Contribution Logged
+              {t('contributionSuccess.contributionLogged')}
             </span>
             <span className="text-sm font-black text-white truncate">
-              {summary ? `${summary.station} • ${summary.price.toFixed(2)} DH` : "Contribution Verified"}
+              {summary ? `${summary.station} • ${summary.price.toFixed(2)} DH` : t('contributionSuccess.contributionVerified')}
             </span>
           </div>
         </div>
@@ -123,7 +125,7 @@ export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone
                 : 'bg-primary hover:bg-blue-400 text-background-dark shadow-[0_15px_30px_rgba(59,130,246,0.3)] active:scale-95'
             }`}
           >
-            {isSpinning ? 'Wait for it...' : 'Awesome, Return to Map'}
+            {isSpinning ? t('contributionSuccess.wait') : t('contributionSuccess.returnToMap')}
           </button>
         </div>
       </div>
