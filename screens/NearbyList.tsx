@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { MOCK_STATIONS } from '../constants';
 import { Station } from '../types';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface NearbyListProps {
   onStationSelect: (station: Station) => void;
@@ -14,10 +14,22 @@ interface NearbyListProps {
 export const NearbyList: React.FC<NearbyListProps> = ({ 
   onStationSelect, 
   onBack, 
-  title = "Nearby Stations",
+  title,
   initialSearch = "Agdal, Rabat",
-  searchPlaceholder = "Search area or station..."
+  searchPlaceholder
 }) => {
+  const { t } = useLanguage();
+  
+  const displayTitle = title || t('nearby.nearbyStations');
+  const displayPlaceholder = searchPlaceholder || t('nearby.searchArea');
+
+  const filters = [
+    { id: 'cheapest', label: t('nearby.cheapest') },
+    { id: 'nearest', label: t('nearby.nearest') },
+    { id: 'diesel', label: t('station.diesel') },
+    { id: 'verified', label: t('nearby.verified') }
+  ];
+
   return (
     <div className="flex flex-col h-full bg-background-dark animate-fadeIn">
       <header className="sticky top-0 z-20 bg-background-dark/95 backdrop-blur-md pt-12 pb-4 px-4 border-b border-white/5">
@@ -25,10 +37,10 @@ export const NearbyList: React.FC<NearbyListProps> = ({
           <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors">
             <span className="material-symbols-outlined text-white">arrow_back</span>
           </button>
-          <h1 className="text-xl font-black text-white">{title}</h1>
+          <h1 className="text-xl font-black text-white">{displayTitle}</h1>
           <button onClick={onBack} className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 transition-all">
             <span className="material-symbols-outlined text-primary text-[20px]">map</span>
-            <span className="text-xs font-bold text-primary">Map</span>
+            <span className="text-xs font-bold text-primary">{t('nearby.map')}</span>
           </button>
         </div>
 
@@ -38,21 +50,21 @@ export const NearbyList: React.FC<NearbyListProps> = ({
           </span>
           <input 
             className="w-full bg-surface-dark border-none rounded-2xl py-4 pl-12 pr-12 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-primary/50" 
-            placeholder={searchPlaceholder}
+            placeholder={displayPlaceholder}
             defaultValue={initialSearch}
           />
         </div>
 
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-          {['Cheapest', 'Nearest', 'Diesel', 'Verified'].map((filter, i) => (
+          {filters.map((filter, i) => (
             <button 
-              key={filter}
+              key={filter.id}
               className={`flex-shrink-0 flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold border transition-all ${
                 i === 0 ? 'bg-primary border-primary text-background-dark shadow-primary/20 shadow-lg' : 'bg-surface-dark border-white/10 text-slate-300'
               }`}
             >
               <span className="material-symbols-outlined text-[18px]">{i === 0 ? 'attach_money' : 'near_me'}</span>
-              {filter}
+              {filter.label}
             </button>
           ))}
         </div>
@@ -72,7 +84,7 @@ export const NearbyList: React.FC<NearbyListProps> = ({
               {isBest && (
                 <div className="absolute top-4 right-4 flex items-center gap-1 bg-primary/20 text-primary px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wider border border-primary/20">
                   <span className="material-symbols-outlined text-[12px] fill-1">stars</span>
-                  Best Price
+                  {t('nearby.bestPrice')}
                 </div>
               )}
               

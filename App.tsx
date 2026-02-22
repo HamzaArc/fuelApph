@@ -13,6 +13,7 @@ import { VoiceReport } from './screens/VoiceReport';
 import { SearchScreen } from './screens/SearchScreen';
 import { AddStation } from './screens/AddStation';
 import { Station } from './types';
+import { useLanguage } from './i18n/LanguageContext';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('map');
@@ -29,6 +30,8 @@ const App: React.FC = () => {
   const [isPioneerContribution, setIsPioneerContribution] = useState(false);
   const [pendingLocation, setPendingLocation] = useState<{lat: number, lng: number} | null>(null);
   const [lastContribution, setLastContribution] = useState<{station: string, fuel: string, price: number} | null>(null);
+
+  const { t } = useLanguage();
 
   const handleReport = () => setIsScanning(true);
 
@@ -55,7 +58,7 @@ const App: React.FC = () => {
   if (isScanning) return (
     <ScanFlow 
       onCancel={() => setIsScanning(false)} 
-      onComplete={(price, type) => finishContribution(selectedStation?.name || 'Unknown', type, price, false)} 
+      onComplete={(price, type) => finishContribution(selectedStation?.name || t('app.unknown'), type, price, false)} 
       onFallback={() => {
         setIsScanning(false);
         setLastViewBeforeReport('map');
@@ -137,7 +140,7 @@ const App: React.FC = () => {
       
       {activeTab === 'search' && (
         searchView === 'filters' ? <SearchScreen onBack={() => setActiveTab('map')} onApplyFilters={() => setSearchView('results')} />
-        : <NearbyList title="Search Results" initialSearch="" onBack={() => setSearchView('filters')} onStationSelect={selectStation} />
+        : <NearbyList title={t('app.searchResults')} initialSearch="" onBack={() => setSearchView('filters')} onStationSelect={selectStation} />
       )}
 
       {activeTab === 'rewards' && <Rewards />}
@@ -151,13 +154,13 @@ const App: React.FC = () => {
                <div className="absolute inset-0 bg-primary/20 blur-3xl animate-pulse-slow"></div>
                <span className="material-symbols-outlined text-6xl relative">document_scanner</span>
             </div>
-            <h2 className="text-4xl font-black text-white mb-4">Snap & Save</h2>
-            <p className="text-slate-400 mb-12 max-w-xs mx-auto leading-relaxed text-lg">Report any station price board to earn rewards. Our AI handles the verification instantly.</p>
+            <h2 className="text-4xl font-black text-white mb-4">{t('app.snapSave')}</h2>
+            <p className="text-slate-400 mb-12 max-w-xs mx-auto leading-relaxed text-lg">{t('app.snapDesc')}</p>
             <button 
               onClick={() => setIsScanning(true)}
               className="bg-primary text-background-dark font-black px-14 py-6 rounded-3xl shadow-2xl shadow-primary/30 active:scale-95 transition-all text-xl uppercase tracking-widest"
             >
-              Start Scanning
+              {t('app.startScanning')}
             </button>
           </div>
         </div>

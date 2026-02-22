@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Station } from '../types';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface StationSheetProps {
   station: Station | null;
@@ -16,6 +17,7 @@ export const StationSheet: React.FC<StationSheetProps> = ({
   onManualReport, 
   onVoiceReport
 }) => {
+  const { t } = useLanguage();
   const [oneTapSuccess, setOneTapSuccess] = useState(false);
   const [translateY, setTranslateY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -75,38 +77,36 @@ export const StationSheet: React.FC<StationSheetProps> = ({
                 <h1 className="text-2xl font-bold text-white tracking-tight leading-none mb-1">{station.name}</h1>
                 <div className="flex items-center gap-2 text-sm text-gray-400">
                   <span className="flex items-center gap-1 text-primary">
-                    <span className="material-symbols-outlined text-[16px]">near_me</span> Map Import
+                    <span className="material-symbols-outlined text-[16px]">near_me</span> {t('station.mapImport')}
                   </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* IF STATION IS A GHOST (IMPORTED FROM MAPS, NO PRICES YET) */}
           {station.isGhost ? (
             <div className="bg-gradient-to-br from-primary/20 to-surface-dark border border-primary/30 rounded-[2rem] p-6 mb-8 text-center shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 size-24 bg-primary/20 blur-2xl rounded-full"></div>
               <div className="size-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4 border border-primary/20">
                 <span className="material-symbols-outlined text-3xl">add_a_photo</span>
               </div>
-              <h2 className="text-xl font-black text-white mb-2">Be the first!</h2>
+              <h2 className="text-xl font-black text-white mb-2">{t('station.beFirst')}</h2>
               <p className="text-xs text-slate-300 mb-6 font-medium leading-relaxed">
-                Google Maps tells us there is a {station.brand} here. Verify it by scanning the price board to earn a massive pioneer reward.
+                {t('station.ghostDesc').replace('{brand}', station.brand)}
               </p>
               <button onClick={onReport} className="w-full h-14 bg-primary text-background-dark font-black text-sm uppercase tracking-widest rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-                Scan Prices Now +500 PTS
+                {t('station.scanNow')}
               </button>
-              <button onClick={onManualReport} className="mt-4 text-[10px] text-slate-400 font-bold uppercase hover:text-white">Or enter manually</button>
+              <button onClick={onManualReport} className="mt-4 text-[10px] text-slate-400 font-bold uppercase hover:text-white">{t('station.enterManually')}</button>
             </div>
           ) : (
-            // NORMAL STATION UI (Has Prices)
             <>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-surface-dark/60 border border-white/5 rounded-2xl p-4 relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-2 opacity-50">
                       <span className="material-symbols-outlined text-white/20 text-4xl -rotate-12">local_gas_station</span>
                   </div>
-                  <p className="text-gray-400 text-sm font-medium mb-1 text-left uppercase">Diesel</p>
+                  <p className="text-gray-400 text-sm font-medium mb-1 text-left uppercase">{t('station.diesel')}</p>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-bold text-white tracking-tight">{station.prices.Diesel}</span>
                     <span className="text-sm font-medium text-gray-400">DH</span>
@@ -116,7 +116,7 @@ export const StationSheet: React.FC<StationSheetProps> = ({
                   <div className="absolute top-0 right-0 p-2 opacity-50">
                       <span className="material-symbols-outlined text-white/20 text-4xl -rotate-12">local_gas_station</span>
                   </div>
-                  <p className="text-gray-400 text-sm font-medium mb-1 text-left uppercase">Sans Plomb</p>
+                  <p className="text-gray-400 text-sm font-medium mb-1 text-left uppercase">{t('station.sansPlomb')}</p>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-bold text-white tracking-tight">{station.prices['Sans Plomb']}</span>
                     <span className="text-sm font-medium text-gray-400">DH</span>
@@ -128,7 +128,7 @@ export const StationSheet: React.FC<StationSheetProps> = ({
                 <div className={`size-2 rounded-full ${isStale ? 'bg-slate-500' : isHighlyTrusted ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-primary animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]'}`}></div>
                 <div className="flex-1 flex justify-between items-center text-xs font-medium">
                   <span className={isStale ? 'text-slate-400' : 'text-slate-300'}>
-                    {isStale ? 'Needs Verification' : `Verified by ${station.verifiedBy || 'Community'}`}
+                    {isStale ? t('station.needsVerification') : `${t('station.verifiedBy')} ${station.verifiedBy || t('station.community')}`}
                   </span>
                   <span className={isStale ? 'text-slate-500 font-bold' : 'text-white font-bold'}>{station.lastUpdated}</span>
                 </div>
@@ -137,30 +137,30 @@ export const StationSheet: React.FC<StationSheetProps> = ({
               <div className="grid grid-cols-2 gap-3 mb-8">
                 <button onClick={openWaze} className="flex items-center justify-center gap-2 px-3 py-3 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors border border-blue-500/20 shadow-lg active:scale-95">
                   <img src="https://cdn.simpleicons.org/waze/60a5fa" alt="Waze" className="h-5 w-5" />
-                  <span className="text-xs font-black uppercase tracking-widest">Open Waze</span>
+                  <span className="text-xs font-black uppercase tracking-widest">{t('station.openWaze')}</span>
                 </button>
                 <button onClick={openGoogleMaps} className="flex items-center justify-center gap-2 px-3 py-3 rounded-xl bg-surface-dark/60 text-slate-300 hover:bg-surface-dark transition-colors border border-white/10 shadow-lg active:scale-95">
                   <span className="material-symbols-outlined text-lg">map</span>
-                  <span className="text-xs font-black uppercase tracking-widest">Google Maps</span>
+                  <span className="text-xs font-black uppercase tracking-widest">{t('station.googleMaps')}</span>
                 </button>
               </div>
 
               {!oneTapSuccess ? (
                 <button onClick={handleOneTap} className="w-full relative group flex items-center justify-center gap-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 text-green-400 py-4 rounded-2xl mb-8 shadow-[0_0_20px_rgba(34,197,94,0.05)] transition-all active:scale-95">
                   <span className="text-2xl animate-bounce-slight">👍</span>
-                  <span className="font-black text-sm uppercase tracking-widest">Confirm Current Prices</span>
+                  <span className="font-black text-sm uppercase tracking-widest">{t('station.confirmPrices')}</span>
                   <div className="absolute top-0 right-0 -mt-2 -mr-2 bg-green-500 text-background-dark text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg">+10 PTS</div>
                 </button>
               ) : (
                 <div className="w-full flex items-center justify-center gap-2 bg-green-500 text-background-dark py-4 rounded-2xl mb-8 shadow-[0_0_20px_rgba(34,197,94,0.4)] animate-fadeIn duration-300">
                   <span className="material-symbols-outlined font-black">check_circle</span>
-                  <span className="font-black text-sm uppercase tracking-widest">Verified! +10 Points</span>
+                  <span className="font-black text-sm uppercase tracking-widest">{t('station.verified10')}</span>
                 </div>
               )}
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-bold text-white">Report Change</h3>
+                  <h3 className="text-lg font-bold text-white">{t('station.reportChange')}</h3>
                 </div>
 
                 <button onClick={onReport} className="w-full group relative flex items-center justify-between bg-primary hover:bg-blue-400 transition-all duration-300 rounded-2xl p-5 text-background-dark overflow-hidden shadow-lg">
@@ -170,8 +170,8 @@ export const StationSheet: React.FC<StationSheetProps> = ({
                       <span className="material-symbols-outlined text-[28px] font-black">center_focus_strong</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="font-black text-lg leading-tight uppercase tracking-tight">Scan Price Board</span>
-                      <span className="text-[10px] opacity-70 font-black uppercase tracking-widest">AI Verification (OCR)</span>
+                      <span className="font-black text-lg leading-tight uppercase tracking-tight">{t('station.scanBoard')}</span>
+                      <span className="text-[10px] opacity-70 font-black uppercase tracking-widest">{t('station.aiVerification')}</span>
                     </div>
                   </div>
                   <span className="material-symbols-outlined z-10 font-black">arrow_forward</span>
@@ -180,11 +180,11 @@ export const StationSheet: React.FC<StationSheetProps> = ({
                 <div className="grid grid-cols-2 gap-3">
                   <button onClick={onVoiceReport} className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/5 text-white transition-all rounded-2xl p-4 active:scale-95">
                     <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>mic</span>
-                    <span className="font-black text-xs uppercase tracking-widest">Voice</span>
+                    <span className="font-black text-xs uppercase tracking-widest">{t('station.voice')}</span>
                   </button>
                   <button onClick={onManualReport} className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/5 text-white transition-all rounded-2xl p-4 active:scale-95">
                     <span className="material-symbols-outlined text-slate-400">edit</span>
-                    <span className="font-black text-xs uppercase tracking-widest">Manual</span>
+                    <span className="font-black text-xs uppercase tracking-widest">{t('station.manual')}</span>
                   </button>
                 </div>
               </div>

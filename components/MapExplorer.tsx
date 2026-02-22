@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MOCK_STATIONS } from '../constants';
 import { FuelType, Station } from '../types';
 import { fetchStationsInBounds } from '../services/placesService';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface MapExplorerProps {
   onStationSelect: (station: Station) => void;
@@ -13,14 +14,12 @@ interface MapExplorerProps {
   onAddStationInitiated: (location: { lat: number, lng: number }) => void;
 }
 
-// 1. Bulletproof BoundsTracker
 const BoundsTracker: React.FC<{ onBoundsChange: (bounds: L.LatLngBounds, center: L.LatLng) => void }> = ({ onBoundsChange }) => {
   const map = useMapEvents({
     moveend: () => onBoundsChange(map.getBounds(), map.getCenter()),
     zoomend: () => onBoundsChange(map.getBounds(), map.getCenter()),
   });
 
-  // Ensure initial load only runs exactly once
   const isInitialLoad = useRef(true);
   useEffect(() => {
     if (isInitialLoad.current) {
@@ -32,7 +31,6 @@ const BoundsTracker: React.FC<{ onBoundsChange: (bounds: L.LatLngBounds, center:
   return null;
 };
 
-// 2. Map Controller to handle "Flying" to searched coordinates
 const MapController: React.FC<{ targetCenter: L.LatLng | null }> = ({ targetCenter }) => {
   const map = useMap();
   useEffect(() => {
@@ -44,6 +42,7 @@ const MapController: React.FC<{ targetCenter: L.LatLng | null }> = ({ targetCent
 };
 
 export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideBottomCard, onViewList, onAddStationInitiated }) => {
+  const { t } = useLanguage();
   const [activeFuel, setActiveFuel] = useState<FuelType>('Diesel');
   const [isBottomCardExpanded, setIsBottomCardExpanded] = useState(false);
   const [isDroppingPin, setIsDroppingPin] = useState(false);
@@ -62,12 +61,11 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
   const [isLoadingArea, setIsLoadingArea] = useState(false);
 
   const fuelTypes: { id: FuelType; label: string }[] = [
-    { id: 'Diesel', label: 'Diesel' },
-    { id: 'Sans Plomb', label: 'Sans Plomb' },
-    { id: 'Premium', label: 'Premium' }
+    { id: 'Diesel', label: t('station.diesel') },
+    { id: 'Sans Plomb', label: t('station.sansPlomb') },
+    { id: 'Premium', label: t('station.premium') }
   ];
 
-  // Memoize the bounds handler to prevent React infinite loops
   const handleBoundsChange = useCallback((bounds: L.LatLngBounds, center: L.LatLng) => {
     setMapBounds(bounds);
     setMapCenter(center);
@@ -84,7 +82,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
           const newCenter = new L.LatLng(parseFloat(data[0].lat), parseFloat(data[0].lon));
           setTargetCenter(newCenter);
         } else {
-          alert('Location not found. Try another city or area in Morocco.');
+          alert(t('map.locationNotFound'));
         }
       } catch (err) {
         console.error('Search failed:', err);
@@ -94,7 +92,6 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
     }
   };
 
-  // Extract a string key so the useEffect only fires when the actual coordinates change, not the object reference
   const boundsKey = mapBounds ? `${mapBounds.getSouth().toFixed(4)},${mapBounds.getWest().toFixed(4)},${mapBounds.getNorth().toFixed(4)},${mapBounds.getEast().toFixed(4)}` : null;
 
   useEffect(() => {
@@ -147,7 +144,6 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
   };
 
   const createCustomIcon = useCallback((station: Station) => {
-    // Moved brandColors to the top so Ghost Stations can use the correct colors for their logos
     const brandColors: Record<string, string> = {
       'Afriquia': '#1A6B3C', 'Shell': '#FBDB0C', 'TotalEnergies': '#ED1C24',
       'Petrom': '#1A5276', 'Ola Energy': '#003399', 'Winxo': '#913bb1'
@@ -160,26 +156,20 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
 
       const iconHTML = renderToStaticMarkup(
         <div className="relative flex flex-col items-center group hover:z-[100] transition-all">
-          {/* Changed to a compact, single-line, horizontally scrolled design using whitespace-nowrap */}
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-[10px] shadow-lg border border-white/5 bg-surface-dark/95 backdrop-blur-md z-10 whitespace-nowrap">
-            {/* Small Brand Logo */}
             <div 
               className="w-3.5 h-3.5 rounded flex items-center justify-center text-[7px] font-black shadow-sm" 
               style={{ backgroundColor: bgColor, color: textColor }}
             >
               {station.brand.charAt(0)}
             </div>
-            {/* Station Brand Name */}
             <span className="text-[10px] font-bold text-slate-300 truncate max-w-[60px]">{displayName}</span>
-            {/* Divider */}
             <div className="w-px h-2.5 bg-white/10 mx-0.5"></div>
-            {/* Plus Icon instead of big text */}
             <span className="material-symbols-outlined text-[13px] text-slate-400">add_circle</span>
           </div>
           <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-surface-dark/95 -mt-[1px]" />
         </div>
       );
-      // Adjusted anchor sizing for the new slimmer icon
       return L.divIcon({ html: iconHTML, className: 'custom-modern-pin', iconSize: [100, 30], iconAnchor: [50, 30] });
     }
 
@@ -207,7 +197,6 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
   return (
     <div className="relative h-full w-full bg-background-dark select-none overflow-hidden">
       
-      {/* Top HUD with Loading Indicator */}
       {!isDroppingPin && (
         <div className="absolute top-0 left-0 right-0 z-[1000] p-4 pt-6 space-y-2 pointer-events-none animate-fadeIn">
           <div className="flex items-center gap-2 pointer-events-auto">
@@ -222,7 +211,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearch}
-                  placeholder={isRouteMode ? "Start: Current Location" : "Search city... (Press Enter)"} 
+                  placeholder={isRouteMode ? t('map.startLocation') : t('map.searchPlaceholder')} 
                   disabled={isRouteMode}
                   className="bg-transparent border-none outline-none flex-1 text-xs font-bold text-white placeholder:text-slate-500 focus:ring-0 truncate disabled:opacity-50" 
                 />
@@ -233,7 +222,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
 
                 {!isRouteMode && !isLoadingArea && (
                   <button onClick={() => setIsRouteMode(true)} className="px-2 py-1 bg-primary/10 text-primary rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px]">route</span> Route
+                    <span className="material-symbols-outlined text-[14px]">route</span> {t('map.route')}
                   </button>
                 )}
                 {isRouteMode && (
@@ -248,7 +237,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
                   <span className="material-symbols-outlined text-red-500 text-[20px]">location_on</span>
                   <input 
                     type="text" 
-                    placeholder="Where are you going?" 
+                    placeholder={t('map.whereTo')} 
                     value={destination}
                     onChange={(e) => setDestination(e.target.value)}
                     className="bg-transparent border-none outline-none flex-1 text-xs font-bold text-white placeholder:text-slate-500 focus:ring-0" 
@@ -268,7 +257,6 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
         </div>
       )}
 
-      {/* FABs */}
       {!isDroppingPin && (
         <div className={`absolute right-4 z-[1000] flex flex-col gap-3 pointer-events-auto transition-all duration-300 ${hideBottomCard ? 'top-40' : 'top-[50%] -translate-y-1/2'}`}>
           <button className="size-12 bg-surface-darker/90 backdrop-blur-xl rounded-[1.25rem] shadow-2xl flex items-center justify-center text-primary border border-white/5 active:scale-90 transition-all">
@@ -280,13 +268,11 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
         </div>
       )}
 
-      {/* Map Layer */}
       <div className="absolute inset-0 z-0">
         <MapContainer center={[33.5890, -7.6310]} zoom={14} zoomControl={false} className="h-full w-full">
           <TileLayer attribution='© CARTO' url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
           <MapController targetCenter={targetCenter} />
           
-          {/* Passed properly memoized handler */}
           <BoundsTracker onBoundsChange={handleBoundsChange} />
           
           {!isDroppingPin && displayedStations.map(station => {
@@ -297,11 +283,10 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
         </MapContainer>
       </div>
 
-      {/* Drop Pin UI */}
       {isDroppingPin && (
         <div className="absolute inset-0 z-[2000] pointer-events-none flex flex-col items-center justify-center animate-fadeIn">
           <div className="bg-background-dark/80 backdrop-blur-sm text-white px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-4 shadow-lg border border-white/10">
-            Drag map to place pin
+            {t('map.dragPin')}
           </div>
           <div className="size-12 -mt-16 text-accent-gold drop-shadow-[0_10px_20px_rgba(251,191,36,0.5)] animate-bounce-slight flex items-end justify-center">
             <span className="material-symbols-outlined text-[56px]" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
@@ -313,14 +298,13 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
                 <span className="material-symbols-outlined">close</span>
               </button>
               <button onClick={confirmPinDrop} className="flex-1 h-16 bg-accent-gold text-background-dark font-black text-lg rounded-[2rem] shadow-[0_15px_30px_rgba(251,191,36,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-widest">
-                Confirm Location
+                {t('map.confirmLocation')}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Swipeable Bottom Card */}
       {!hideBottomCard && !isDroppingPin && cheapestNearby && (
         <div className="absolute bottom-4 left-4 right-4 z-[1000] pointer-events-none animate-slide-up">
           <div 
@@ -344,7 +328,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
                   </div>
                   <div>
                     <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">
-                      {isRouteMode ? 'Cheapest on Route' : 'Cheapest Nearby'}
+                      {isRouteMode ? t('map.cheapestRoute') : t('map.cheapestNearby')}
                     </p>
                     <h3 className="text-base font-black text-white truncate max-w-[160px] leading-tight mt-0.5">{cheapestNearby.name}</h3>
                   </div>
@@ -352,7 +336,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
                 <div className="text-right">
                   <p className="text-3xl font-black text-primary tracking-tighter leading-none">{cheapestNearby.prices[activeFuel]?.toFixed(2)}</p>
                   <div className="flex items-center gap-1 justify-end mt-1">
-                    <span className="text-[10px] font-black text-slate-500">MAD / L</span>
+                    <span className="text-[10px] font-black text-slate-500">{t('map.madL')}</span>
                   </div>
                 </div>
               </div>
@@ -362,7 +346,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
                   <div className="h-px bg-white/5 w-full" />
                   <div className="flex items-center justify-around text-[10px] font-black text-slate-400 uppercase tracking-widest">
                     <span className="flex items-center gap-2"><span className="material-symbols-outlined text-primary text-[18px]">near_me</span> {cheapestNearby.distance}</span>
-                    <span className="flex items-center gap-2"><span className="material-symbols-outlined text-primary text-[18px]">timer</span> 4 MINS</span>
+                    <span className="flex items-center gap-2"><span className="material-symbols-outlined text-primary text-[18px]">timer</span> 4 {t('map.mins')}</span>
                     <span className="flex items-center gap-2">
                       <span className={`material-symbols-outlined text-[18px] ${Date.now() - cheapestNearby.lastUpdatedTimestamp > 86400000 ? 'text-slate-500' : 'text-primary'}`}>verified</span> 
                       {cheapestNearby.lastUpdated.toUpperCase()}
@@ -370,7 +354,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
                   </div>
                   <div className="flex gap-3">
                     <button onClick={(e) => { e.stopPropagation(); openWaze(cheapestNearby.location.lat, cheapestNearby.location.lng); }} className="flex-1 h-16 bg-blue-500 text-white rounded-2xl font-black text-sm flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-blue-500/20">
-                      <img src="https://cdn.simpleicons.org/waze/ffffff" alt="Waze" className="h-6 w-6" /> Start Journey
+                      <img src="https://cdn.simpleicons.org/waze/ffffff" alt="Waze" className="h-6 w-6" /> {t('map.startJourney')}
                     </button>
                     <button onClick={(e) => { e.stopPropagation(); onStationSelect(cheapestNearby); }} className="size-16 bg-white/5 text-white rounded-2xl flex items-center justify-center active:scale-95 border border-white/5">
                       <span className="material-symbols-outlined text-[24px]">info</span>

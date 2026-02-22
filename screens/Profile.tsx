@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { MOCK_USER } from '../constants';
 import { Leaderboard } from './Leaderboard';
@@ -10,8 +9,10 @@ import { VehicleSettings } from './VehicleSettings';
 import { PaymentMethods } from './PaymentMethods';
 import { SecuritySettings } from './SecuritySettings';
 import { HelpCenter } from './HelpCenter';
+import { LanguageSettings } from './LanguageSettings';
+import { useLanguage } from '../i18n/LanguageContext';
 
-type ProfileSubView = 'main' | 'leaderboard' | 'referrals' | 'logs' | 'notifications' | 'badges' | 'vehicle' | 'payment' | 'security' | 'help';
+type ProfileSubView = 'main' | 'leaderboard' | 'referrals' | 'logs' | 'notifications' | 'badges' | 'vehicle' | 'payment' | 'security' | 'help' | 'language';
 
 interface ProfileProps {
   onSignOut: () => void;
@@ -19,6 +20,7 @@ interface ProfileProps {
 
 export const Profile: React.FC<ProfileProps> = ({ onSignOut }) => {
   const [subView, setSubView] = useState<ProfileSubView>('main');
+  const { t } = useLanguage();
 
   const renderContent = () => {
     switch (subView) {
@@ -31,6 +33,7 @@ export const Profile: React.FC<ProfileProps> = ({ onSignOut }) => {
       case 'payment': return <PaymentMethods onBack={() => setSubView('main')} />;
       case 'security': return <SecuritySettings onBack={() => setSubView('main')} />;
       case 'help': return <HelpCenter onBack={() => setSubView('main')} />;
+      case 'language': return <LanguageSettings onBack={() => setSubView('main')} />;
       default: return (
         <div className="animate-fadeIn pb-32">
           {/* Header & Level Progress */}
@@ -58,24 +61,24 @@ export const Profile: React.FC<ProfileProps> = ({ onSignOut }) => {
                 />
               </div>
               <div className="absolute -bottom-1 -right-1 bg-primary text-background-dark font-black px-3 py-1 rounded-full border-4 border-background-dark shadow-xl text-xs z-20">
-                LVL {MOCK_USER.level}
+                {t('profile.level')} {MOCK_USER.level}
               </div>
             </div>
 
             <h1 className="text-3xl font-black text-white mb-1 tracking-tight">{MOCK_USER.name}</h1>
-            <p className="text-primary font-black text-[10px] uppercase tracking-[0.2em] mb-8">Expert Tracker • Top 1% in Rabat</p>
+            <p className="text-primary font-black text-[10px] uppercase tracking-[0.2em] mb-8">{t('profile.expertTracker')}</p>
 
             <div className="w-full grid grid-cols-3 gap-0.5 rounded-3xl overflow-hidden bg-white/5 border border-white/5 shadow-2xl backdrop-blur-md">
               <div className="flex flex-col items-center py-4 bg-surface-dark/40">
-                <span className="text-[9px] font-black text-slate-500 uppercase mb-1">Savings</span>
+                <span className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('profile.savings')}</span>
                 <span className="text-lg font-black text-white">{MOCK_USER.savings}<span className="text-[10px] font-bold text-slate-500 ml-0.5">DH</span></span>
               </div>
               <div className="flex flex-col items-center py-4 bg-surface-dark/40 border-x border-white/5">
-                <span className="text-[9px] font-black text-slate-500 uppercase mb-1">Reports</span>
+                <span className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('profile.reports')}</span>
                 <span className="text-lg font-black text-white">{MOCK_USER.reportsCount}</span>
               </div>
               <div className="flex flex-col items-center py-4 bg-surface-dark/40">
-                <span className="text-[9px] font-black text-slate-500 uppercase mb-1">Rank</span>
+                <span className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('profile.rank')}</span>
                 <span className="text-lg font-black text-primary">#{MOCK_USER.globalRank}</span>
               </div>
             </div>
@@ -84,46 +87,48 @@ export const Profile: React.FC<ProfileProps> = ({ onSignOut }) => {
           <div className="px-6 grid grid-cols-2 gap-4 -mt-4 relative z-10">
              <MenuButton 
                icon="leaderboard" 
-               label="Leaderboard" 
-               desc="Check your rank" 
+               label={t('profile.leaderboard')} 
+               desc={t('profile.leaderboardDesc')} 
                color="text-primary" 
                onClick={() => setSubView('leaderboard')}
              />
              <MenuButton 
                icon="group_add" 
-               label="Referrals" 
-               desc="Earn 100 pts" 
+               label={t('profile.referrals')} 
+               desc={t('profile.referralsDesc')} 
                color="text-fs-blue" 
                onClick={() => setSubView('referrals')}
              />
              <MenuButton 
                icon="book_2" 
-               label="Fuel Logs" 
-               desc="Track efficiency" 
+               label={t('profile.fuelLogs')} 
+               desc={t('profile.fuelLogsDesc')} 
                color="text-accent-gold" 
                onClick={() => setSubView('logs')}
              />
              <MenuButton 
                icon="military_tech" 
-               label="Badges" 
-               desc="12/45 Unlocked" 
+               label={t('profile.badges')} 
+               desc={t('profile.badgesDesc')} 
                color="text-orange-500" 
                onClick={() => setSubView('badges')}
              />
           </div>
 
           <div className="mt-8 px-6 space-y-3">
-             <ListButton icon="directions_car" label="Vehicle Settings" onClick={() => setSubView('vehicle')} />
-             <ListButton icon="payments" label="Payment Methods" onClick={() => setSubView('payment')} />
-             <ListButton icon="security" label="Account Security" onClick={() => setSubView('security')} />
-             <ListButton icon="help" label="Help Center" onClick={() => setSubView('help')} />
+             <ListButton icon="directions_car" label={t('profile.vehicleSettings')} onClick={() => setSubView('vehicle')} />
+             <ListButton icon="payments" label={t('profile.paymentMethods')} onClick={() => setSubView('payment')} />
+             <ListButton icon="security" label={t('profile.accountSecurity')} onClick={() => setSubView('security')} />
+             <ListButton icon="language" label={t('profile.language')} onClick={() => setSubView('language')} />
+             <ListButton icon="help" label={t('profile.helpCenter')} onClick={() => setSubView('help')} />
+             
              <button 
                onClick={onSignOut}
                className="w-full flex items-center justify-between p-5 rounded-2xl bg-red-500/5 text-red-500 font-bold border border-red-500/10 active:scale-95 transition-all mt-4"
              >
                 <div className="flex items-center gap-4">
                    <span className="material-symbols-outlined">logout</span>
-                   <span>Sign Out</span>
+                   <span>{t('profile.signOut')}</span>
                 </div>
              </button>
           </div>
@@ -158,6 +163,6 @@ const ListButton: React.FC<{ icon: string; label: string; onClick?: () => void }
       <span className="material-symbols-outlined text-slate-400">{icon}</span>
       <span className="font-bold text-sm text-slate-200">{label}</span>
     </div>
-    <span className="material-symbols-outlined text-slate-600">chevron_right</span>
+      <span className="material-symbols-outlined text-slate-600">chevron_right</span>
   </button>
 );
