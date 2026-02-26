@@ -15,6 +15,7 @@ import { VoiceReport } from './screens/VoiceReport';
 import { SearchScreen } from './screens/SearchScreen';
 import { AddStation } from './screens/AddStation';
 import { Station } from './types';
+import { AlertModal } from './components/AlertModal';
 import { useLanguage } from './i18n/LanguageContext';
 import { supabase } from './lib/supabase';
 import { submitPriceReport, addNewStation } from './services/stationService';
@@ -43,6 +44,10 @@ const App: React.FC = () => {
   const [stationRefreshKey, setStationRefreshKey] = useState(0);
   const [searchFilters, setSearchFilters] = useState<{ selectedFuel?: string, selectedBrands?: string[], selectedAmenities?: string[] } | null>(null);
 
+  const [alertConfig, setAlertConfig] = useState<{ isOpen: boolean, title: string, message: string, type: 'error' | 'success' | 'info' } | null>(null);
+  const [showLocationReminder, setShowLocationReminder] = useState(false);
+  const [hasSeenLocationReminder, setHasSeenLocationReminder] = useState(false);
+
   const { t } = useLanguage();
   const { user, isLoading } = useAuth();
 
@@ -63,22 +68,35 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
-      (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      (err) => console.log('Geolocation error:', err),
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setShowLocationReminder(false);
+      },
+      (err) => {
+        console.log('Geolocation error:', err);
+        if (err.code === err.PERMISSION_DENIED && !hasSeenLocationReminder) {
+          setShowLocationReminder(true);
+          setHasSeenLocationReminder(true);
+        }
+      },
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
+  }, [hasSeenLocationReminder]);
+
+  const showAlert = (title: string, message: string, type: 'error' | 'success' | 'info' = 'info') => {
+    setAlertConfig({ isOpen: true, title, message, type });
+  };
 
   const checkDistance = (targetLat: number, targetLng: number): boolean => {
     if (userRole === 'admin') return true;
     if (!userLocation) {
-      alert(t('app.locationRequired') || 'Location permission is required to report prices.');
+      showAlert(t('app.locationReminderTitle'), t('app.locationRequired'), 'error');
       return false;
     }
     const dist = calculateDistance(userLocation.lat, userLocation.lng, targetLat, targetLng);
     if (dist > 150) {
-      alert(t('app.tooFar') || 'You must be within 150 meters of the station to report.');
+      showAlert(t('app.error'), t('app.tooFar'), 'error');
       return false;
     }
     return true;
@@ -227,6 +245,7 @@ const App: React.FC = () => {
                 userLocation={userLocation}
                 onClose={() => setSelectedStation(null)}
                 onReport={handleReport}
+                onValidateDistance={() => selectedStation ? checkDistance(selectedStation.location.lat, selectedStation.location.lng) : false}
                 onManualReport={() => {
                   if (selectedStation && !checkDistance(selectedStation.location.lat, selectedStation.location.lng)) return;
                   setLastViewBeforeReport('map');
@@ -268,7 +287,7 @@ const App: React.FC = () => {
           : <NearbyList title={t('app.searchResults')} searchFilters={searchFilters} initialSearch="" onBack={() => setSearchView('filters')} onStationSelect={selectStation} />
       )}
 
-      {activeTab === 'rewards' && <Rewards />}
+      {activeTab === 'rewards' && <Rewards showAlert={showAlert} />}
       {activeTab === 'profile' && <Profile onSignOut={handleSignOut} />}
 
       {activeTab === 'scan' && (
@@ -290,6 +309,24 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Global Modals */}
+      <AlertModal
+        isOpen={!!alertConfig}
+        title={alertConfig?.title || ''}
+        message={alertConfig?.message || ''}
+        type={alertConfig?.type || 'info'}
+        onClose={() => setAlertConfig(null)}
+      />
+
+      <AlertModal
+        isOpen={showLocationReminder}
+        title={t('app.locationReminderTitle') || 'Location Required'}
+        message={t('app.locationReminderDesc') || "Please allow location access to fully use the app's features."}
+        type="error"
+        onClose={() => setShowLocationReminder(false)}
+        confirmText="OK"
+      />
     </Layout>
   );
 };

@@ -3,7 +3,11 @@ import { Voucher } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
 import { supabase } from '../lib/supabase';
 
-export const Rewards: React.FC = () => {
+interface RewardsProps {
+  showAlert: (title: string, message: string, type?: 'error' | 'success' | 'info') => void;
+}
+
+export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
   const { t } = useLanguage();
   const [activeView, setActiveView] = useState<'shop' | 'wallet'>('shop');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -53,7 +57,7 @@ export const Rewards: React.FC = () => {
 
   const handleRedeem = async (item: any) => {
     if (points < item.points) {
-      alert(t('rewards.notEnoughPoints') || 'Not enough points');
+      showAlert(t('app.error') || 'Error', t('rewards.notEnoughPoints') || 'Not enough points', 'error');
       return;
     }
 
@@ -75,7 +79,7 @@ export const Rewards: React.FC = () => {
       .eq('id', user.id);
 
     if (userError) {
-      alert(t('app.error') || 'An error occurred');
+      showAlert(t('app.error') || 'Error', t('app.error') || 'An error occurred', 'error');
       setLoading(false);
       return;
     }
@@ -108,7 +112,7 @@ export const Rewards: React.FC = () => {
         expiryDate: newVoucher.expiry_date,
         status: newVoucher.status || 'active'
       }, ...vouchers]);
-      alert(t('rewards.redeemSuccess') || 'Voucher redeemed successfully!');
+      showAlert('Success!', t('rewards.redeemSuccess') || 'Voucher redeemed successfully!', 'success');
       setActiveView('wallet');
     }
     setLoading(false);

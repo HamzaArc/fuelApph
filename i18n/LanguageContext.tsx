@@ -29,7 +29,12 @@ const en: Translations = {
     snapDesc: 'Report any station price board to earn rewards. Our AI handles the verification instantly.',
     startScanning: 'Start Scanning',
     unknown: 'Unknown',
-    searchResults: 'Search Results'
+    searchResults: 'Search Results',
+    locationRequired: 'Location permission is required to report or confirm prices.',
+    tooFar: 'You must be within 150 meters of the station to report or confirm.',
+    error: 'An error occurred.',
+    locationReminderTitle: 'Location Required',
+    locationReminderDesc: "Hello! You can't add prices or confirm and gain points without location access. Please allow location to find the closest stations, use the app fully, and earn points and gifts!"
   },
   profile: {
     level: 'LVL',
@@ -350,7 +355,12 @@ const fr: Translations = {
     snapDesc: 'Signalez n\'importe quel panneau de prix pour gagner des récompenses. Notre IA s\'occupe de la vérification instantanément.',
     startScanning: 'Commencer le scan',
     unknown: 'Inconnu',
-    searchResults: 'Résultats de recherche'
+    searchResults: 'Résultats de recherche',
+    locationRequired: 'L\'accès à la position est requis pour signaler ou confirmer les prix.',
+    tooFar: 'Vous devez être à moins de 150 mètres de la station pour signaler ou confirmer.',
+    error: 'Une erreur s\'est produite.',
+    locationReminderTitle: 'Position Requise',
+    locationReminderDesc: "Bonjour ! Vous ne pouvez pas ajouter ou confirmer de prix et gagner des points sans la localisation. Autorisez la localisation pour trouver les stations les plus proches, utiliser pleinement l'application et gagner des points et cadeaux !"
   },
   profile: {
     level: 'NIV',

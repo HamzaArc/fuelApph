@@ -12,6 +12,7 @@ interface StationSheetProps {
   onManualReport: () => void;
   onVoiceReport: () => void;
   userLocation?: { lat: number, lng: number } | null;
+  onValidateDistance: () => boolean;
 }
 
 export const StationSheet: React.FC<StationSheetProps> = ({
@@ -20,7 +21,8 @@ export const StationSheet: React.FC<StationSheetProps> = ({
   onReport,
   onManualReport,
   onVoiceReport,
-  userLocation
+  userLocation,
+  onValidateDistance
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -68,6 +70,7 @@ export const StationSheet: React.FC<StationSheetProps> = ({
   const openGoogleMaps = () => window.open(`http://googleusercontent.com/maps.google.com/dir/?api=1&destination=${station.location.lat},${station.location.lng}`, '_blank');
 
   const handleOneTap = async () => {
+    if (!onValidateDistance()) return;
     setOneTapSuccess(true);
     if (user && station) {
       await confirmPrice(
