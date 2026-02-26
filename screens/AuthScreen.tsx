@@ -1,0 +1,99 @@
+import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
+
+export const AuthScreen: React.FC = () => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isLogin, setIsLogin] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleAuth = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+
+        try {
+            if (isLogin) {
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+            } else {
+                const { error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: { full_name: email.split('@')[0] } // Default name
+                    }
+                });
+                if (error) throw error;
+            }
+        } catch (err: any) {
+            setError(err.message || 'Authentication failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="flex h-screen items-center justify-center bg-background text-white p-4">
+            <div className="bg-surface p-8 rounded-2xl shadow-xl w-full max-w-sm border border-slate-800">
+                <div className="text-center mb-8">
+                    <div className="size-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
+                        <span className="material-symbols-outlined text-3xl">local_gas_station</span>
+                    </div>
+                    <h1 className="text-2xl font-black">FuelSpy Morocco</h1>
+                    <p className="text-slate-400 mt-2">{isLogin ? 'Welcome back' : 'Create an account'}</p>
+                </div>
+
+                {error && (
+                    <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg mb-4 text-sm">
+                        {error}
+                    </div>
+                )}
+
+                <form onSubmit={handleAuth} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-400 mb-1">Email</label>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            className="w-full bg-background-dark border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
+                            placeholder="you@example.com"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-400 mb-1">Password</label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            minLength={6}
+                            className="w-full bg-background-dark border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
+                            placeholder="••••••••"
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-primary text-background-dark font-bold py-3 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                        {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Sign Up')}
+                    </button>
+                </form>
+
+                <div className="mt-6 text-center">
+                    <button
+                        onClick={() => setIsLogin(!isLogin)}
+                        className="text-sm text-slate-400 hover:text-white transition-colors"
+                    >
+                        {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};

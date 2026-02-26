@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Layout } from './components/Layout';
+import { AuthScreen } from './screens/AuthScreen';
+import { useAuth } from './contexts/AuthContext';
 import { MapExplorer } from './components/MapExplorer';
 import { StationSheet } from './components/StationSheet';
 import { ScanFlow } from './screens/ScanFlow';
@@ -19,19 +21,20 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('map');
   const [searchView, setSearchView] = useState<'filters' | 'results'>('filters');
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
-  
+
   const [viewMode, setViewMode] = useState<'map' | 'list' | 'manual_report' | 'voice_report' | 'add_station'>('map');
   const [lastViewBeforeReport, setLastViewBeforeReport] = useState<'map'>('map');
-  
+
   const [isScanning, setIsScanning] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [hasOnboarded, setHasOnboarded] = useState(false);
-  
+
   const [isPioneerContribution, setIsPioneerContribution] = useState(false);
-  const [pendingLocation, setPendingLocation] = useState<{lat: number, lng: number} | null>(null);
-  const [lastContribution, setLastContribution] = useState<{station: string, fuel: string, price: number} | null>(null);
+  const [pendingLocation, setPendingLocation] = useState<{ lat: number, lng: number } | null>(null);
+  const [lastContribution, setLastContribution] = useState<{ station: string, fuel: string, price: number } | null>(null);
 
   const { t } = useLanguage();
+  const { user, isLoading } = useAuth();
 
   const handleReport = () => setIsScanning(true);
 
@@ -53,12 +56,24 @@ const App: React.FC = () => {
     setViewMode('map');
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background text-white">
+        <div className="size-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen />;
+  }
+
   if (!hasOnboarded) return <Onboarding onComplete={() => setHasOnboarded(true)} />;
-  
+
   if (isScanning) return (
-    <ScanFlow 
-      onCancel={() => setIsScanning(false)} 
-      onComplete={(price, type) => finishContribution(selectedStation?.name || t('app.unknown'), type, price, false)} 
+    <ScanFlow
+      onCancel={() => setIsScanning(false)}
+      onComplete={(price, type) => finishContribution(selectedStation?.name || t('app.unknown'), type, price, false)}
       onFallback={() => {
         setIsScanning(false);
         setLastViewBeforeReport('map');
@@ -69,13 +84,13 @@ const App: React.FC = () => {
 
   if (showSuccess) {
     return (
-      <ContributionSuccess 
-        summary={lastContribution} 
+      <ContributionSuccess
+        summary={lastContribution}
         isPioneer={isPioneerContribution}
         onDone={() => {
           setShowSuccess(false);
           setSelectedStation(null);
-        }} 
+        }}
       />
     );
   }
@@ -90,19 +105,19 @@ const App: React.FC = () => {
         <>
           {viewMode === 'map' && (
             <>
-              <MapExplorer 
+              <MapExplorer
                 hideBottomCard={!!selectedStation}
                 onViewList={() => setViewMode('list')}
-                onStationSelect={(s) => setSelectedStation(s)} 
+                onStationSelect={(s) => setSelectedStation(s)}
                 onAddStationInitiated={(loc) => {
                   setPendingLocation(loc);
                   setViewMode('add_station');
                 }}
               />
-              
-              <StationSheet 
-                station={selectedStation} 
-                onClose={() => setSelectedStation(null)} 
+
+              <StationSheet
+                station={selectedStation}
+                onClose={() => setSelectedStation(null)}
                 onReport={handleReport}
                 onManualReport={() => {
                   setLastViewBeforeReport('map');
@@ -121,7 +136,7 @@ const App: React.FC = () => {
           )}
 
           {viewMode === 'add_station' && (
-            <AddStation 
+            <AddStation
               location={pendingLocation}
               onBack={() => setViewMode('map')}
               onComplete={(brand, price) => finishContribution(`${brand} Station`, 'Diesel', price, true)}
@@ -137,26 +152,26 @@ const App: React.FC = () => {
           )}
         </>
       )}
-      
+
       {activeTab === 'search' && (
         searchView === 'filters' ? <SearchScreen onBack={() => setActiveTab('map')} onApplyFilters={() => setSearchView('results')} />
-        : <NearbyList title={t('app.searchResults')} initialSearch="" onBack={() => setSearchView('filters')} onStationSelect={selectStation} />
+          : <NearbyList title={t('app.searchResults')} initialSearch="" onBack={() => setSearchView('filters')} onStationSelect={selectStation} />
       )}
 
       {activeTab === 'rewards' && <Rewards />}
       {activeTab === 'profile' && <Profile onSignOut={handleSignOut} />}
-      
+
       {activeTab === 'scan' && (
         <div className="h-full flex items-center justify-center p-8 text-center animate-fadeIn relative">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(59,130,246,0.08),transparent_70%)]" />
           <div className="relative z-10">
             <div className="size-28 bg-primary/20 rounded-full flex items-center justify-center text-primary mx-auto mb-8 relative">
-               <div className="absolute inset-0 bg-primary/20 blur-3xl animate-pulse-slow"></div>
-               <span className="material-symbols-outlined text-6xl relative">document_scanner</span>
+              <div className="absolute inset-0 bg-primary/20 blur-3xl animate-pulse-slow"></div>
+              <span className="material-symbols-outlined text-6xl relative">document_scanner</span>
             </div>
             <h2 className="text-4xl font-black text-white mb-4">{t('app.snapSave')}</h2>
             <p className="text-slate-400 mb-12 max-w-xs mx-auto leading-relaxed text-lg">{t('app.snapDesc')}</p>
-            <button 
+            <button
               onClick={() => setIsScanning(true)}
               className="bg-primary text-background-dark font-black px-14 py-6 rounded-3xl shadow-2xl shadow-primary/30 active:scale-95 transition-all text-xl uppercase tracking-widest"
             >

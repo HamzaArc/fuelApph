@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { MOCK_USER } from '../constants';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { User as AppUser } from '../types';
 import { Leaderboard } from './Leaderboard';
 import { Referrals } from './Referrals';
 import { VehicleLog } from './VehicleLog';
@@ -20,7 +22,43 @@ interface ProfileProps {
 
 export const Profile: React.FC<ProfileProps> = ({ onSignOut }) => {
   const [subView, setSubView] = useState<ProfileSubView>('main');
+  const [profileData, setProfileData] = useState<AppUser | null>(null);
+  const [loading, setLoading] = useState(true);
   const { t } = useLanguage();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      loadProfile(user.id);
+    }
+  }, [user]);
+
+  const loadProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error loading profile:', error);
+    } else {
+      setProfileData({
+        id: data.id,
+        name: data.name,
+        level: data.level,
+        xp: data.xp,
+        nextLevelXp: data.next_level_xp,
+        totalPoints: data.total_points,
+        reportsCount: data.reports_count,
+        verifiedCount: data.verified_count,
+        savings: data.savings,
+        globalRank: data.global_rank,
+        vehicle: data.vehicle
+      });
+    }
+    setLoading(false);
+  };
 
   const renderContent = () => {
     switch (subView) {
@@ -34,106 +72,117 @@ export const Profile: React.FC<ProfileProps> = ({ onSignOut }) => {
       case 'security': return <SecuritySettings onBack={() => setSubView('main')} />;
       case 'help': return <HelpCenter onBack={() => setSubView('main')} />;
       case 'language': return <LanguageSettings onBack={() => setSubView('main')} />;
-      default: return (
-        <div className="animate-fadeIn pb-32">
-          {/* Header & Level Progress */}
-          <div className="flex flex-col items-center pt-12 pb-10 px-6 bg-gradient-to-b from-surface-dark/40 to-background-dark relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1/2 bg-primary/5 blur-[120px] pointer-events-none" />
-            
-            <button 
-              onClick={() => setSubView('notifications')}
-              className="absolute right-6 top-12 size-11 rounded-2xl bg-surface-dark border border-white/5 flex items-center justify-center text-slate-400 relative"
-            >
-              <span className="material-symbols-outlined text-[22px]">notifications</span>
-              <span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-surface-dark" />
-            </button>
-
-            <div className="relative mb-6">
-              <div className="size-32 rounded-full border-4 border-primary/20 p-1.5 relative">
-                <svg className="absolute inset-0 size-full -rotate-90">
-                  <circle cx="64" cy="64" r="60" fill="none" stroke="currentColor" strokeWidth="4" className="text-white/5" />
-                  <circle cx="64" cy="64" r="60" fill="none" stroke="currentColor" strokeWidth="4" strokeDasharray="376" strokeDashoffset={376 * (1 - 0.78)} className="text-primary transition-all duration-1000" />
-                </svg>
-                <img 
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD7lWc3Zbxpl_SpBz_FS6unVna7LApC1zxm1c8LRcxEkXE8Vd8EEqppAiYS65qSmA6jFUEEfUkVRIGBPaJN8IMa9BKGgQf-9efmHKa2iExtZiDIlQpCcI6kOQcltPLVg-mXBlGKsHa-OblN_PgsvUe_eKsU5bZkdWupbeaqq1_GhWTiSArXz3Wo5sApCd95RtVtv9YnHbqom_ShfZ0GuRidfWboRCORUcz2YC2B_8JX7jasaVX6VuKqF7XvW2a3R4g3_gwZsGYDgxY" 
-                  alt="Profile" 
-                  className="size-full rounded-full object-cover relative z-10" 
-                />
-              </div>
-              <div className="absolute -bottom-1 -right-1 bg-primary text-background-dark font-black px-3 py-1 rounded-full border-4 border-background-dark shadow-xl text-xs z-20">
-                {t('profile.level')} {MOCK_USER.level}
-              </div>
+      default:
+        if (loading || !profileData) {
+          return (
+            <div className="flex items-center justify-center p-12">
+              <div className="size-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
+          );
+        }
+        return (
+          <div className="animate-fadeIn pb-32">
+            {/* Header & Level Progress */}
+            <div className="flex flex-col items-center pt-12 pb-10 px-6 bg-gradient-to-b from-surface-dark/40 to-background-dark relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1/2 bg-primary/5 blur-[120px] pointer-events-none" />
 
-            <h1 className="text-3xl font-black text-white mb-1 tracking-tight">{MOCK_USER.name}</h1>
-            <p className="text-primary font-black text-[10px] uppercase tracking-[0.2em] mb-8">{t('profile.expertTracker')}</p>
+              <button
+                onClick={() => setSubView('notifications')}
+                className="absolute right-6 top-12 size-11 rounded-2xl bg-surface-dark border border-white/5 flex items-center justify-center text-slate-400 relative"
+              >
+                <span className="material-symbols-outlined text-[22px]">notifications</span>
+                <span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-surface-dark" />
+              </button>
 
-            <div className="w-full grid grid-cols-3 gap-0.5 rounded-3xl overflow-hidden bg-white/5 border border-white/5 shadow-2xl backdrop-blur-md">
-              <div className="flex flex-col items-center py-4 bg-surface-dark/40">
-                <span className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('profile.savings')}</span>
-                <span className="text-lg font-black text-white">{MOCK_USER.savings}<span className="text-[10px] font-bold text-slate-500 ml-0.5">DH</span></span>
-              </div>
-              <div className="flex flex-col items-center py-4 bg-surface-dark/40 border-x border-white/5">
-                <span className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('profile.reports')}</span>
-                <span className="text-lg font-black text-white">{MOCK_USER.reportsCount}</span>
-              </div>
-              <div className="flex flex-col items-center py-4 bg-surface-dark/40">
-                <span className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('profile.rank')}</span>
-                <span className="text-lg font-black text-primary">#{MOCK_USER.globalRank}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="px-6 grid grid-cols-2 gap-4 -mt-4 relative z-10">
-             <MenuButton 
-               icon="leaderboard" 
-               label={t('profile.leaderboard')} 
-               desc={t('profile.leaderboardDesc')} 
-               color="text-primary" 
-               onClick={() => setSubView('leaderboard')}
-             />
-             <MenuButton 
-               icon="group_add" 
-               label={t('profile.referrals')} 
-               desc={t('profile.referralsDesc')} 
-               color="text-fs-blue" 
-               onClick={() => setSubView('referrals')}
-             />
-             <MenuButton 
-               icon="book_2" 
-               label={t('profile.fuelLogs')} 
-               desc={t('profile.fuelLogsDesc')} 
-               color="text-accent-gold" 
-               onClick={() => setSubView('logs')}
-             />
-             <MenuButton 
-               icon="military_tech" 
-               label={t('profile.badges')} 
-               desc={t('profile.badgesDesc')} 
-               color="text-orange-500" 
-               onClick={() => setSubView('badges')}
-             />
-          </div>
-
-          <div className="mt-8 px-6 space-y-3">
-             <ListButton icon="directions_car" label={t('profile.vehicleSettings')} onClick={() => setSubView('vehicle')} />
-             <ListButton icon="payments" label={t('profile.paymentMethods')} onClick={() => setSubView('payment')} />
-             <ListButton icon="security" label={t('profile.accountSecurity')} onClick={() => setSubView('security')} />
-             <ListButton icon="language" label={t('profile.language')} onClick={() => setSubView('language')} />
-             <ListButton icon="help" label={t('profile.helpCenter')} onClick={() => setSubView('help')} />
-             
-             <button 
-               onClick={onSignOut}
-               className="w-full flex items-center justify-between p-5 rounded-2xl bg-red-500/5 text-red-500 font-bold border border-red-500/10 active:scale-95 transition-all mt-4"
-             >
-                <div className="flex items-center gap-4">
-                   <span className="material-symbols-outlined">logout</span>
-                   <span>{t('profile.signOut')}</span>
+              <div className="relative mb-6">
+                <div className="size-32 rounded-full border-4 border-primary/20 p-1.5 relative">
+                  <svg className="absolute inset-0 size-full -rotate-90">
+                    <circle cx="64" cy="64" r="60" fill="none" stroke="currentColor" strokeWidth="4" className="text-white/5" />
+                    <circle cx="64" cy="64" r="60" fill="none" stroke="currentColor" strokeWidth="4" strokeDasharray="376" strokeDashoffset={376 * (1 - 0.78)} className="text-primary transition-all duration-1000" />
+                  </svg>
+                  <img
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD7lWc3Zbxpl_SpBz_FS6unVna7LApC1zxm1c8LRcxEkXE8Vd8EEqppAiYS65qSmA6jFUEEfUkVRIGBPaJN8IMa9BKGgQf-9efmHKa2iExtZiDIlQpCcI6kOQcltPLVg-mXBlGKsHa-OblN_PgsvUe_eKsU5bZkdWupbeaqq1_GhWTiSArXz3Wo5sApCd95RtVtv9YnHbqom_ShfZ0GuRidfWboRCORUcz2YC2B_8JX7jasaVX6VuKqF7XvW2a3R4g3_gwZsGYDgxY"
+                    alt="Profile"
+                    className="size-full rounded-full object-cover relative z-10"
+                  />
                 </div>
-             </button>
+                <div className="absolute -bottom-1 -right-1 bg-primary text-background-dark font-black px-3 py-1 rounded-full border-4 border-background-dark shadow-xl text-xs z-20">
+                  {t('profile.level')} {profileData.level || 1}
+                </div>
+              </div>
+
+              <h1 className="text-3xl font-black text-white mb-1 tracking-tight">{profileData.name}</h1>
+              <p className="text-primary font-black text-[10px] uppercase tracking-[0.2em] mb-8">{t('profile.expertTracker')}</p>
+
+              <div className="w-full grid grid-cols-3 gap-0.5 rounded-3xl overflow-hidden bg-white/5 border border-white/5 shadow-2xl backdrop-blur-md">
+                <div className="flex flex-col items-center py-4 bg-surface-dark/40">
+                  <span className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('profile.savings')}</span>
+                  <span className="text-lg font-black text-white">{profileData.savings}<span className="text-[10px] font-bold text-slate-500 ml-0.5">DH</span></span>
+                </div>
+                <div className="flex flex-col items-center py-4 bg-surface-dark/40 border-x border-white/5">
+                  <span className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('profile.reports')}</span>
+                  <span className="text-lg font-black text-white">{profileData.reportsCount}</span>
+                </div>
+                <div className="flex flex-col items-center py-4 bg-surface-dark/40">
+                  <span className="text-[9px] font-black text-slate-500 uppercase mb-1">{t('profile.rank')}</span>
+                  <span className="text-lg font-black text-primary">#{profileData.globalRank || '-'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 grid grid-cols-2 gap-4 -mt-4 relative z-10">
+              <MenuButton
+                icon="leaderboard"
+                label={t('profile.leaderboard')}
+                desc={t('profile.leaderboardDesc')}
+                color="text-primary"
+                onClick={() => setSubView('leaderboard')}
+              />
+              <MenuButton
+                icon="group_add"
+                label={t('profile.referrals')}
+                desc={t('profile.referralsDesc')}
+                color="text-fs-blue"
+                onClick={() => setSubView('referrals')}
+              />
+              <MenuButton
+                icon="book_2"
+                label={t('profile.fuelLogs')}
+                desc={t('profile.fuelLogsDesc')}
+                color="text-accent-gold"
+                onClick={() => setSubView('logs')}
+              />
+              <MenuButton
+                icon="military_tech"
+                label={t('profile.badges')}
+                desc={t('profile.badgesDesc')}
+                color="text-orange-500"
+                onClick={() => setSubView('badges')}
+              />
+            </div>
+
+            <div className="mt-8 px-6 space-y-3">
+              <ListButton icon="directions_car" label={t('profile.vehicleSettings')} onClick={() => setSubView('vehicle')} />
+              <ListButton icon="payments" label={t('profile.paymentMethods')} onClick={() => setSubView('payment')} />
+              <ListButton icon="security" label={t('profile.accountSecurity')} onClick={() => setSubView('security')} />
+              <ListButton icon="language" label={t('profile.language')} onClick={() => setSubView('language')} />
+              <ListButton icon="help" label={t('profile.helpCenter')} onClick={() => setSubView('help')} />
+
+              <button
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  onSignOut();
+                }}
+                className="w-full flex items-center justify-between p-5 rounded-2xl bg-red-500/5 text-red-500 font-bold border border-red-500/10 active:scale-95 transition-all mt-4"
+              >
+                <div className="flex items-center gap-4">
+                  <span className="material-symbols-outlined">logout</span>
+                  <span>{t('profile.signOut')}</span>
+                </div>
+              </button>
+            </div>
           </div>
-        </div>
-      );
+        );
     }
   };
 
@@ -155,7 +204,7 @@ const MenuButton: React.FC<{ icon: string; label: string; desc: string; color: s
 );
 
 const ListButton: React.FC<{ icon: string; label: string; onClick?: () => void }> = ({ icon, label, onClick }) => (
-  <button 
+  <button
     onClick={onClick}
     className="w-full flex items-center justify-between p-5 rounded-2xl bg-surface-dark border border-white/5 active:scale-[0.98] transition-all text-left"
   >
@@ -163,6 +212,6 @@ const ListButton: React.FC<{ icon: string; label: string; onClick?: () => void }
       <span className="material-symbols-outlined text-slate-400">{icon}</span>
       <span className="font-bold text-sm text-slate-200">{label}</span>
     </div>
-      <span className="material-symbols-outlined text-slate-600">chevron_right</span>
+    <span className="material-symbols-outlined text-slate-600">chevron_right</span>
   </button>
 );

@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { MOCK_STATIONS } from '../constants';
 import { FuelType, Station } from '../types';
 import { fetchStationsInBounds } from '../services/placesService';
+import { supabase } from '../lib/supabase';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface MapExplorerProps {
@@ -46,19 +46,33 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
   const [activeFuel, setActiveFuel] = useState<FuelType>('Diesel');
   const [isBottomCardExpanded, setIsBottomCardExpanded] = useState(false);
   const [isDroppingPin, setIsDroppingPin] = useState(false);
-  
+
   const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
   const [mapCenter, setMapCenter] = useState<L.LatLng>(new L.LatLng(33.5890, -7.6310));
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [targetCenter, setTargetCenter] = useState<L.LatLng | null>(null);
 
   const [touchStart, setTouchStart] = useState(0);
   const [isRouteMode, setIsRouteMode] = useState(false);
   const [destination, setDestination] = useState('');
-  
+
+  const [dbStations, setDbStations] = useState<Station[]>([]);
   const [dynamicStations, setDynamicStations] = useState<Station[]>([]);
   const [isLoadingArea, setIsLoadingArea] = useState(false);
+
+  // Fetch stations from Supabase on mount
+  useEffect(() => {
+    const fetchSupabaseStations = async () => {
+      const { data, error } = await supabase.from('stations').select('*');
+      if (!error && data) {
+        setDbStations(data);
+      }
+    };
+    fetchSupabaseStations();
+
+    // Optional: Subscribe to Supabase realtime here if needed
+  }, []);
 
   const fuelTypes: { id: FuelType; label: string }[] = [
     { id: 'Diesel', label: t('station.diesel') },
@@ -77,7 +91,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
       try {
         const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery + ', Morocco')}&limit=1`);
         const data = await response.json();
-        
+
         if (data && data.length > 0) {
           const newCenter = new L.LatLng(parseFloat(data[0].lat), parseFloat(data[0].lon));
           setTargetCenter(newCenter);
@@ -97,7 +111,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
   useEffect(() => {
     const loadArea = async () => {
       if (!mapBounds) return;
-      
+
       setIsLoadingArea(true);
       const boundsData = {
         south: mapBounds.getSouth(),
@@ -107,19 +121,19 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
       };
 
       const importedStations = await fetchStationsInBounds(boundsData);
-      
-      const mockIds = new Set(MOCK_STATIONS.map(s => s.id));
+
+      const mockIds = new Set(dbStations.map(s => s.id));
       const newStations = importedStations.filter(s => !mockIds.has(s.id));
-      
+
       setDynamicStations(newStations);
       setIsLoadingArea(false);
     };
 
-    const debounceTimer = setTimeout(loadArea, 700); 
+    const debounceTimer = setTimeout(loadArea, 700);
     return () => clearTimeout(debounceTimer);
-  }, [boundsKey]); 
+  }, [boundsKey]);
 
-  const displayedStations = [...MOCK_STATIONS, ...dynamicStations];
+  const displayedStations = [...dbStations, ...dynamicStations];
 
   const cheapestNearby = useMemo(() => {
     const realStations = displayedStations.filter(s => !s.isGhost && s.prices[activeFuel]);
@@ -139,8 +153,8 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
   const handleCardTouchStart = (e: React.TouchEvent) => setTouchStart(e.touches[0].clientY);
   const handleCardTouchEnd = (e: React.TouchEvent) => {
     const delta = e.changedTouches[0].clientY - touchStart;
-    if (delta < -30) setIsBottomCardExpanded(true); 
-    if (delta > 30) setIsBottomCardExpanded(false); 
+    if (delta < -30) setIsBottomCardExpanded(true);
+    if (delta > 30) setIsBottomCardExpanded(false);
   };
 
   const createCustomIcon = useCallback((station: Station) => {
@@ -157,8 +171,8 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
       const iconHTML = renderToStaticMarkup(
         <div className="relative flex flex-col items-center group hover:z-[100] transition-all">
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-[10px] shadow-lg border border-white/5 bg-surface-dark/95 backdrop-blur-md z-10 whitespace-nowrap">
-            <div 
-              className="w-3.5 h-3.5 rounded flex items-center justify-center text-[7px] font-black shadow-sm" 
+            <div
+              className="w-3.5 h-3.5 rounded flex items-center justify-center text-[7px] font-black shadow-sm"
               style={{ backgroundColor: bgColor, color: textColor }}
             >
               {station.brand.charAt(0)}
@@ -196,26 +210,26 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
 
   return (
     <div className="relative h-full w-full bg-background-dark select-none overflow-hidden">
-      
+
       {!isDroppingPin && (
         <div className="absolute top-0 left-0 right-0 z-[1000] p-4 pt-6 space-y-2 pointer-events-none animate-fadeIn">
           <div className="flex items-center gap-2 pointer-events-auto">
             <div className="flex-1 bg-surface-darker/90 backdrop-blur-xl rounded-2xl flex flex-col px-4 py-2 shadow-2xl border border-white/5 ring-1 ring-white/10 transition-all">
-              
+
               <div className="flex items-center gap-2 h-10">
                 <span className="material-symbols-outlined text-primary text-[20px]">
                   {isRouteMode ? 'my_location' : 'search'}
                 </span>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearch}
-                  placeholder={isRouteMode ? t('map.startLocation') : t('map.searchPlaceholder')} 
+                  placeholder={isRouteMode ? t('map.startLocation') : t('map.searchPlaceholder')}
                   disabled={isRouteMode}
-                  className="bg-transparent border-none outline-none flex-1 text-xs font-bold text-white placeholder:text-slate-500 focus:ring-0 truncate disabled:opacity-50" 
+                  className="bg-transparent border-none outline-none flex-1 text-xs font-bold text-white placeholder:text-slate-500 focus:ring-0 truncate disabled:opacity-50"
                 />
-                
+
                 {isLoadingArea && (
                   <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 )}
@@ -235,18 +249,18 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
               {isRouteMode && (
                 <div className="flex items-center gap-2 h-10 border-t border-white/10 mt-1 pt-1 animate-slide-up">
                   <span className="material-symbols-outlined text-red-500 text-[20px]">location_on</span>
-                  <input 
-                    type="text" 
-                    placeholder={t('map.whereTo')} 
+                  <input
+                    type="text"
+                    placeholder={t('map.whereTo')}
                     value={destination}
                     onChange={(e) => setDestination(e.target.value)}
-                    className="bg-transparent border-none outline-none flex-1 text-xs font-bold text-white placeholder:text-slate-500 focus:ring-0" 
+                    className="bg-transparent border-none outline-none flex-1 text-xs font-bold text-white placeholder:text-slate-500 focus:ring-0"
                   />
                 </div>
               )}
             </div>
           </div>
-          
+
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5 pointer-events-auto mt-2">
             {fuelTypes.map(ft => (
               <button key={ft.id} onClick={() => setActiveFuel(ft.id)} className={`flex-shrink-0 h-8 px-5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all duration-300 border ${activeFuel === ft.id ? 'bg-primary text-background-dark border-primary shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-surface-darker/80 backdrop-blur-md text-slate-400 border-white/5'}`}>
@@ -272,9 +286,9 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
         <MapContainer center={[33.5890, -7.6310]} zoom={14} zoomControl={false} className="h-full w-full">
           <TileLayer attribution='© CARTO' url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
           <MapController targetCenter={targetCenter} />
-          
+
           <BoundsTracker onBoundsChange={handleBoundsChange} />
-          
+
           {!isDroppingPin && displayedStations.map(station => {
             const icon = createCustomIcon(station);
             if (!icon) return null;
@@ -307,7 +321,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
 
       {!hideBottomCard && !isDroppingPin && cheapestNearby && (
         <div className="absolute bottom-4 left-4 right-4 z-[1000] pointer-events-none animate-slide-up">
-          <div 
+          <div
             onTouchStart={handleCardTouchStart}
             onTouchEnd={handleCardTouchEnd}
             onClick={(e) => {
@@ -340,7 +354,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
                   </div>
                 </div>
               </div>
-              
+
               {isBottomCardExpanded && (
                 <div className="mt-8 space-y-6 animate-fadeIn">
                   <div className="h-px bg-white/5 w-full" />
@@ -348,7 +362,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
                     <span className="flex items-center gap-2"><span className="material-symbols-outlined text-primary text-[18px]">near_me</span> {cheapestNearby.distance}</span>
                     <span className="flex items-center gap-2"><span className="material-symbols-outlined text-primary text-[18px]">timer</span> 4 {t('map.mins')}</span>
                     <span className="flex items-center gap-2">
-                      <span className={`material-symbols-outlined text-[18px] ${Date.now() - cheapestNearby.lastUpdatedTimestamp > 86400000 ? 'text-slate-500' : 'text-primary'}`}>verified</span> 
+                      <span className={`material-symbols-outlined text-[18px] ${Date.now() - cheapestNearby.lastUpdatedTimestamp > 86400000 ? 'text-slate-500' : 'text-primary'}`}>verified</span>
                       {cheapestNearby.lastUpdated.toUpperCase()}
                     </span>
                   </div>

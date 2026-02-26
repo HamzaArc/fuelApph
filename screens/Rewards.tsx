@@ -1,13 +1,55 @@
-import React, { useState } from 'react';
-import { MOCK_USER, MOCK_VOUCHERS } from '../constants';
+import React, { useState, useEffect } from 'react';
 import { Voucher } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
+import { supabase } from '../lib/supabase';
 
 export const Rewards: React.FC = () => {
   const { t } = useLanguage();
   const [activeView, setActiveView] = useState<'shop' | 'wallet'>('shop');
   const [activeCategory, setActiveCategory] = useState('All');
   const [expandedVoucher, setExpandedVoucher] = useState<string | null>(null);
+
+  const [points, setPoints] = useState(0);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRewardsData = async () => {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Fetch user points
+        const { data: userData } = await supabase
+          .from('users')
+          .select('total_points')
+          .eq('id', user.id)
+          .single();
+        if (userData) {
+          setPoints(userData.total_points || 0);
+        }
+
+        // Fetch user vouchers
+        const { data: vouchersData } = await supabase
+          .from('vouchers')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (vouchersData) {
+          setVouchers(vouchersData.map((v: any) => ({
+            id: v.id,
+            brand: v.brand,
+            code: v.code,
+            value: v.value,
+            expiryDate: v.expiry_date,
+            status: v.status
+          })));
+        }
+      }
+      setLoading(false);
+    };
+
+    fetchRewardsData();
+  }, []);
 
   const categories = [
     { id: 'All', label: t('rewards.cats.all'), icon: null },
@@ -58,7 +100,7 @@ export const Rewards: React.FC = () => {
         <h2 className="text-xl font-black text-white">{activeView === 'shop' ? t('rewards.shopTitle') : t('rewards.walletTitle')}</h2>
         <div className="flex items-center gap-2">
           {activeView === 'shop' ? (
-            <button 
+            <button
               onClick={() => setActiveView('wallet')}
               className="flex h-10 px-4 items-center justify-center rounded-full bg-surface-dark text-primary border border-white/10 text-xs font-bold gap-2"
             >
@@ -66,7 +108,7 @@ export const Rewards: React.FC = () => {
               {t('rewards.wallet')}
             </button>
           ) : (
-            <button 
+            <button
               onClick={() => setActiveView('shop')}
               className="flex h-10 px-4 items-center justify-center rounded-full bg-surface-dark text-primary border border-white/10 text-xs font-bold gap-2"
             >
@@ -91,7 +133,7 @@ export const Rewards: React.FC = () => {
                 <div className="relative z-10 flex flex-col items-center gap-1">
                   <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{t('rewards.availableBalance')}</span>
                   <div className="flex items-baseline gap-2">
-                    <h1 className="text-5xl font-black text-white tracking-tighter">{MOCK_USER.totalPoints.toLocaleString()}</h1>
+                    <h1 className="text-5xl font-black text-white tracking-tighter">{points.toLocaleString()}</h1>
                     <span className="text-primary font-bold">PTS</span>
                   </div>
                 </div>
@@ -112,14 +154,13 @@ export const Rewards: React.FC = () => {
             <section className="mb-6 pt-2">
               <div className="flex gap-3 px-4 overflow-x-auto no-scrollbar pb-2">
                 {categories.map(cat => (
-                  <button 
+                  <button
                     key={cat.id}
                     onClick={() => setActiveCategory(cat.id)}
-                    className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 transition-all active:scale-95 border ${
-                      activeCategory === cat.id 
-                      ? 'bg-primary border-primary text-black font-bold' 
+                    className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 transition-all active:scale-95 border ${activeCategory === cat.id
+                      ? 'bg-primary border-primary text-black font-bold'
                       : 'bg-surface-dark border-white/10 text-slate-400 font-medium'
-                    }`}
+                      }`}
                   >
                     {cat.icon && <span className="material-symbols-outlined text-[18px]">{cat.icon}</span>}
                     <span className="text-xs">{cat.label}</span>
@@ -136,9 +177,9 @@ export const Rewards: React.FC = () => {
               </div>
               <div className="group relative overflow-hidden rounded-3xl bg-surface-dark border border-white/5 aspect-[16/9]">
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10"></div>
-                <img 
-                  alt="Hot Deal" 
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                <img
+                  alt="Hot Deal"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdrdDxJ1FnZ3-lvQ_ewj37p00jNn8zTJOZnUqeSCnF5Fl2pWm5tBICJk-L-CwzOR8bcqhe0M9DY8phEOM2yWOjFz5d9jpgYZt_n08Slz6EfuzbCOd_MqVtTuTbt43i-xnVoKqz98q94TXFKnSOZxdJG3G9YaHOV7JQDsKaKP6uYZb39eJTjFFQHILCR-5Lleu-OnTRpBgKHms1SB8cocvXCXKw3J-LBpMBPJN6GVGSDr62WEEuF4s9MV4WDUf-hcnuaCagZGOHyUmN"
                 />
                 <div className="absolute bottom-0 left-0 right-0 p-5 z-20">
@@ -163,9 +204,9 @@ export const Rewards: React.FC = () => {
                 {shopItems.map(item => (
                   <div key={item.id} className="flex flex-col bg-surface-dark rounded-3xl overflow-hidden border border-white/5 group hover:border-primary/50 transition-colors shadow-lg">
                     <div className="h-32 w-full overflow-hidden relative">
-                      <img 
-                        alt={item.title} 
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      <img
+                        alt={item.title}
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
                         src={item.image}
                       />
                       <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md rounded-full px-3 py-1 flex items-center gap-1 border border-white/10">
@@ -236,71 +277,75 @@ export const Rewards: React.FC = () => {
 
             {/* Vouchers List */}
             <div className="space-y-4">
-              {MOCK_VOUCHERS.map(v => (
-                <div 
-                  key={v.id} 
-                  className={`bg-surface-dark rounded-3xl border transition-all overflow-hidden ${expandedVoucher === v.id ? 'border-primary/40 shadow-2xl shadow-primary/10' : 'border-white/5'}`}
-                >
-                  <div 
-                    onClick={() => setExpandedVoucher(expandedVoucher === v.id ? null : v.id)}
-                    className="p-4 flex items-center justify-between gap-4 cursor-pointer"
+              {loading ? (
+                <div className="flex justify-center py-8"><div className="animate-spin size-8 border-4 border-primary border-t-transparent rounded-full" /></div>
+              ) : vouchers.length > 0 ? (
+                vouchers.map(v => (
+                  <div
+                    key={v.id}
+                    className={`bg-surface-dark rounded-3xl border transition-all overflow-hidden ${expandedVoucher === v.id ? 'border-primary/40 shadow-2xl shadow-primary/10' : 'border-white/5'}`}
                   >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="size-12 rounded-2xl bg-white flex items-center justify-center p-2 shrink-0 shadow-inner">
-                        <span className="text-slate-900 font-black text-xs">{v.brand.substring(0,2)}</span>
-                      </div>
-                      <div className="text-left">
-                        <h3 className="font-bold text-white text-sm">{v.brand}</h3>
-                        <p className="text-primary font-black text-xs leading-none mt-1">{v.value}</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="text-[8px] font-black text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-full uppercase tracking-widest">{t('rewards.expiresSoon')}</span>
-                      <span className="material-symbols-outlined text-slate-600 transition-transform duration-300" style={{ transform: expandedVoucher === v.id ? 'rotate(180deg)' : 'none' }}>expand_more</span>
-                    </div>
-                  </div>
-
-                  {expandedVoucher === v.id && (
-                    <div className="bg-black/20 px-6 pb-8 pt-4 animate-slide-up border-t border-white/5">
-                      <div className="flex flex-col items-center gap-6">
-                        <p className="text-xs text-slate-500 font-medium text-center leading-relaxed">{t('rewards.presentQr')}</p>
-                        
-                        {/* QR Code Container */}
-                        <div className="bg-white p-4 rounded-3xl shadow-2xl w-48 h-48 flex items-center justify-center relative border-4 border-primary/20">
-                          <div className="absolute top-2 left-2 size-4 border-t-2 border-l-2 border-primary rounded-tl-lg"></div>
-                          <div className="absolute bottom-2 right-2 size-4 border-b-2 border-r-2 border-primary rounded-br-lg"></div>
-                          <img 
-                            alt="QR Code" 
-                            className="size-full object-contain" 
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmJcomlPHr3wYSr1VwLD2Frb4H91KAI0WE1vu8u9GZTX4g2hv5XubfGy3l5ELihoYGV6DcgaryTDLGa0Y85ciPCwu8RUdYA7VMc0eDWQaroaR_SLcFrl1UV_kC2hu2Y9w4lst64DacUaPo3bHfA1YdTglteH6qNDPN6OhUGjHJcnTErLZVBwFdnl5nbJ7endY66GwByJDHjI4Ue-fQL-O4ti7LarZJgwJhYYs9wCDDtx1mXHEWEFzcwf3SJIlAp_76CZJJA7g1lnJ9" 
-                          />
+                    <div
+                      onClick={() => setExpandedVoucher(expandedVoucher === v.id ? null : v.id)}
+                      className="p-4 flex items-center justify-between gap-4 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="size-12 rounded-2xl bg-white flex items-center justify-center p-2 shrink-0 shadow-inner">
+                          <span className="text-slate-900 font-black text-xs">{v.brand.substring(0, 2)}</span>
                         </div>
+                        <div className="text-left">
+                          <h3 className="font-bold text-white text-sm">{v.brand}</h3>
+                          <p className="text-primary font-black text-xs leading-none mt-1">{v.value}</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-[8px] font-black text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-full uppercase tracking-widest">{t('rewards.expiresSoon')}</span>
+                        <span className="material-symbols-outlined text-slate-600 transition-transform duration-300" style={{ transform: expandedVoucher === v.id ? 'rotate(180deg)' : 'none' }}>expand_more</span>
+                      </div>
+                    </div>
 
-                        <div className="w-full space-y-4">
-                          <div className="flex items-center justify-between bg-surface-darker px-5 py-3 rounded-2xl border border-white/5">
-                            <span className="text-[10px] text-slate-500 font-black tracking-widest uppercase">{t('rewards.voucherCode')}</span>
-                            <span className="font-mono font-bold text-white tracking-widest">{v.code}</span>
-                            <button className="text-primary active:scale-90 transition-transform">
-                              <span className="material-symbols-outlined text-[20px]">content_copy</span>
+                    {expandedVoucher === v.id && (
+                      <div className="bg-black/20 px-6 pb-8 pt-4 animate-slide-up border-t border-white/5">
+                        <div className="flex flex-col items-center gap-6">
+                          <p className="text-xs text-slate-500 font-medium text-center leading-relaxed">{t('rewards.presentQr')}</p>
+
+                          {/* QR Code Container */}
+                          <div className="bg-white p-4 rounded-3xl shadow-2xl w-48 h-48 flex items-center justify-center relative border-4 border-primary/20">
+                            <div className="absolute top-2 left-2 size-4 border-t-2 border-l-2 border-primary rounded-tl-lg"></div>
+                            <div className="absolute bottom-2 right-2 size-4 border-b-2 border-r-2 border-primary rounded-br-lg"></div>
+                            <img
+                              alt="QR Code"
+                              className="size-full object-contain"
+                              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmJcomlPHr3wYSr1VwLD2Frb4H91KAI0WE1vu8u9GZTX4g2hv5XubfGy3l5ELihoYGV6DcgaryTDLGa0Y85ciPCwu8RUdYA7VMc0eDWQaroaR_SLcFrl1UV_kC2hu2Y9w4lst64DacUaPo3bHfA1YdTglteH6qNDPN6OhUGjHJcnTErLZVBwFdnl5nbJ7endY66GwByJDHjI4Ue-fQL-O4ti7LarZJgwJhYYs9wCDDtx1mXHEWEFzcwf3SJIlAp_76CZJJA7g1lnJ9"
+                            />
+                          </div>
+
+                          <div className="w-full space-y-4">
+                            <div className="flex items-center justify-between bg-surface-darker px-5 py-3 rounded-2xl border border-white/5">
+                              <span className="text-[10px] text-slate-500 font-black tracking-widest uppercase">{t('rewards.voucherCode')}</span>
+                              <span className="font-mono font-bold text-white tracking-widest">{v.code}</span>
+                              <button className="text-primary active:scale-90 transition-transform">
+                                <span className="material-symbols-outlined text-[20px]">content_copy</span>
+                              </button>
+                            </div>
+                            <button className="w-full py-4 bg-primary text-background-dark font-black rounded-2xl shadow-xl shadow-primary/20 active:scale-95 transition-all text-sm uppercase tracking-widest">
+                              {t('rewards.markAsUsed')}
                             </button>
                           </div>
-                          <button className="w-full py-4 bg-primary text-background-dark font-black rounded-2xl shadow-xl shadow-primary/20 active:scale-95 transition-all text-sm uppercase tracking-widest">
-                            {t('rewards.markAsUsed')}
-                          </button>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                ))
+              ) : null}
             </div>
 
             {/* Empty State */}
-            {MOCK_VOUCHERS.length === 0 && (
+            {!loading && vouchers.length === 0 && (
               <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
                 <span className="material-symbols-outlined text-6xl mb-4">savings</span>
                 <p className="text-slate-400 font-bold">{t('rewards.noVouchers')}</p>
-                <button 
+                <button
                   onClick={() => setActiveView('shop')}
                   className="mt-4 text-primary text-xs font-black uppercase tracking-widest"
                 >

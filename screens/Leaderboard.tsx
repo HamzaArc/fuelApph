@@ -1,24 +1,73 @@
-import React, { useState } from 'react';
-import { MOCK_USER, MOCK_LOCAL_LEADERBOARD } from '../constants';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
+import { supabase } from '../lib/supabase';
+
+// Define a simple ranking type
+interface RankingUser {
+  id: string;
+  name: string;
+  level: number;
+  points: number;
+  city: string;
+  img: string;
+}
 
 export const Leaderboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'local' | 'global'>('local');
 
-  const globalRankings = [
-    { id: 'u4', name: 'Amina L.', level: 9, points: 2950, city: 'Casablanca', img: 'https://i.pravatar.cc/100?u=4' },
-    { id: 'u5', name: 'Karim R.', level: 8, points: 2800, city: 'Rabat', img: 'https://i.pravatar.cc/100?u=5' },
-    { id: 'u6', name: 'Layla M.', level: 8, points: 2650, city: 'Tangier', img: 'https://i.pravatar.cc/100?u=6' },
-    { id: 'u7', name: 'Omar S.', level: 7, points: 2420, city: 'Marrakech', img: 'https://i.pravatar.cc/100?u=7' },
-  ];
+  const [localRankings, setLocalRankings] = useState<RankingUser[]>([]);
+  const [globalRankings, setGlobalRankings] = useState<RankingUser[]>([]);
+  const [userRank, setUserRank] = useState<number | null>(null);
 
-  const currentRankings = activeTab === 'local' ? MOCK_LOCAL_LEADERBOARD.slice(3) : globalRankings;
-  
-  // Podium Data based on tab (Unified to use 'points' exclusively to satisfy TS)
-  const p1 = activeTab === 'local' ? MOCK_LOCAL_LEADERBOARD[0] : { id: 'g1', name: 'Ahmed B.', points: 4500, img: 'https://i.pravatar.cc/100?u=1' };
-  const p2 = activeTab === 'local' ? MOCK_LOCAL_LEADERBOARD[1] : { id: 'g2', name: 'Sara K.', points: 3800, img: 'https://i.pravatar.cc/100?u=2' };
-  const p3 = activeTab === 'local' ? MOCK_LOCAL_LEADERBOARD[2] : { id: 'g3', name: 'Youssef T.', points: 3200, img: 'https://i.pravatar.cc/100?u=3' };
+  useEffect(() => {
+    const fetchRankings = async () => {
+      // Fetch global rankings
+      const { data: globalData } = await supabase
+        .from('users')
+        .select('id, name, level, total_points, city, avatar_url')
+        .order('total_points', { ascending: false })
+        .limit(10);
+
+      if (globalData) {
+        const formattedGlobal: RankingUser[] = globalData.map(u => ({
+          id: u.id,
+          name: u.name || 'Unknown',
+          level: u.level || 1,
+          points: u.total_points || 0,
+          city: u.city || 'Morocco',
+          img: u.avatar_url || `https://i.pravatar.cc/100?u=${u.id}`
+        }));
+        setGlobalRankings(formattedGlobal);
+
+        // Mocking local rankings by just shuffling/slicing global for now 
+        // In a real app, this would filter by city/region
+        setLocalRankings([...formattedGlobal].sort(() => 0.5 - Math.random()));
+      }
+
+      // Fetch current user rank (simplified approach)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // This is a naive way to get rank. Better done via an RPC function in Supabase.
+        const { count } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .gt('total_points', 0); // Assuming we somehow know the user's points
+
+        setUserRank(Math.floor(Math.random() * 50) + 1); // Mock until we have a real ranking function
+      }
+    };
+
+    fetchRankings();
+  }, []);
+
+  const currentRankings = activeTab === 'local' ? localRankings.slice(3) : globalRankings.slice(3);
+
+  // Podium Data based on tab
+  const activeList = activeTab === 'local' ? localRankings : globalRankings;
+  const p1 = activeList[0] || { id: 'p1', name: '-', points: 0, img: '', level: 1, city: '' };
+  const p2 = activeList[1] || { id: 'p2', name: '-', points: 0, img: '', level: 1, city: '' };
+  const p3 = activeList[2] || { id: 'p3', name: '-', points: 0, img: '', level: 1, city: '' };
 
   return (
     <div className="flex flex-col h-full bg-background-dark animate-fadeIn">
@@ -30,16 +79,16 @@ export const Leaderboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <h1 className="text-xl font-black">{t('leaderboard.topReporters')}</h1>
           <div className="size-11" />
         </div>
-        
+
         {/* Neighborhood vs Global Toggle */}
         <div className="flex bg-surface-dark p-1 rounded-2xl border border-white/5 mb-4">
-          <button 
+          <button
             onClick={() => setActiveTab('local')}
             className={`flex-1 py-2 text-xs font-black rounded-xl transition-all ${activeTab === 'local' ? 'bg-primary text-background-dark shadow-lg' : 'text-slate-500'}`}
           >
             {t('leaderboard.localTab')}
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('global')}
             className={`flex-1 py-2 text-xs font-black rounded-xl transition-all ${activeTab === 'global' ? 'bg-primary text-background-dark shadow-lg' : 'text-slate-500'}`}
           >
@@ -53,7 +102,7 @@ export const Leaderboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         {/* Podium Section */}
         <div className="pt-8 pb-8 px-6 flex justify-center items-end gap-3 relative">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-transparent pointer-events-none" />
-          
+
           <PodiumItem rank={2} name={p2.name} pts={p2.points} img={p2.img} />
           <PodiumItem rank={1} name={p1.name} pts={p1.points} img={p1.img} featured />
           <PodiumItem rank={3} name={p3.name} pts={p3.points} img={p3.img} />
@@ -62,22 +111,22 @@ export const Leaderboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         {/* List Section */}
         <div className="px-6 space-y-3">
           <div className="flex justify-between items-end mb-4 px-2">
-             <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('leaderboard.restOfPack')}</h2>
-             <p className="text-[10px] font-bold text-primary">{t('leaderboard.updatedAgo')}</p>
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('leaderboard.restOfPack')}</h2>
+            <p className="text-[10px] font-bold text-primary">{t('leaderboard.updatedAgo')}</p>
           </div>
 
           {currentRankings.map((user, index) => (
             <div key={user.id} className={`flex items-center gap-4 p-4 rounded-[2rem] border backdrop-blur-sm ${user.id === 'u1' ? 'bg-primary/10 border-primary/30' : 'bg-surface-dark/40 border-white/5'}`}>
-               <span className={`w-6 text-center text-xs font-black ${user.id === 'u1' ? 'text-primary' : 'text-slate-600'}`}>#{index + 4}</span>
-               <img src={user.img} className={`size-11 rounded-full border-2 ${user.id === 'u1' ? 'border-primary' : 'border-white/10'}`} alt={user.name} />
-               <div className="flex-1">
-                 <p className={`font-bold text-sm ${user.id === 'u1' ? 'text-white' : 'text-white'}`}>{user.name}</p>
-                 <p className="text-[10px] text-slate-500 font-bold uppercase">{user.city} • Lvl {user.level}</p>
-               </div>
-               <div className="text-right">
-                 <p className={`font-black text-sm ${user.id === 'u1' ? 'text-primary' : 'text-white'}`}>{user.points.toLocaleString()}</p>
-                 <p className="text-[8px] font-black text-slate-600 uppercase">PTS</p>
-               </div>
+              <span className={`w-6 text-center text-xs font-black ${user.id === 'u1' ? 'text-primary' : 'text-slate-600'}`}>#{index + 4}</span>
+              <img src={user.img} className={`size-11 rounded-full border-2 ${user.id === 'u1' ? 'border-primary' : 'border-white/10'}`} alt={user.name} />
+              <div className="flex-1">
+                <p className={`font-bold text-sm ${user.id === 'u1' ? 'text-white' : 'text-white'}`}>{user.name}</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">{user.city} • Lvl {user.level}</p>
+              </div>
+              <div className="text-right">
+                <p className={`font-black text-sm ${user.id === 'u1' ? 'text-primary' : 'text-white'}`}>{user.points.toLocaleString()}</p>
+                <p className="text-[8px] font-black text-slate-600 uppercase">PTS</p>
+              </div>
             </div>
           ))}
         </div>
@@ -86,28 +135,26 @@ export const Leaderboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {/* Adjusted bottom to 28 to sit nicely above bottom nav */}
       <div className="fixed bottom-[104px] left-4 right-4 z-50">
         <div className="bg-primary/95 backdrop-blur-xl border border-white/20 p-4 rounded-[2.5rem] shadow-2xl flex items-center justify-between text-background-dark animate-slide-up">
-           <div className="flex items-center gap-4">
-             <div className="size-12 rounded-full border-2 border-background-dark/20 p-0.5">
-               <img src="https://i.pravatar.cc/100?u=me" className="size-full rounded-full" alt="Me" />
-             </div>
-             <div>
-               <p className="font-black text-base leading-tight">{t('leaderboard.yourRank')}</p>
-               <p className="text-[10px] font-black uppercase opacity-70">
-                 {activeTab === 'local' ? t('leaderboard.topLocal') : t('leaderboard.topGlobal')}
-               </p>
-             </div>
-           </div>
-           <div className="text-right">
-             <p className="text-3xl font-black leading-none">
-               #{activeTab === 'local' ? '1' : MOCK_USER.globalRank}
-             </p>
-             {activeTab === 'global' && (
-                <div className="flex items-center gap-1 justify-end mt-1">
-                  <span className="material-symbols-outlined text-[12px] font-black">arrow_upward</span>
-                  <span className="text-[10px] font-black">12 {t('leaderboard.spots')}</span>
-                </div>
-             )}
-           </div>
+          <div className="flex items-center gap-4">
+            <div className="size-12 rounded-full border-2 border-background-dark/20 p-0.5">
+              <img src="https://i.pravatar.cc/100?u=me" className="size-full rounded-full" alt="Me" />
+            </div>
+            <div>
+              <p className="font-black text-base leading-tight">{t('leaderboard.yourRank')}</p>
+              <p className="text-[10px] font-black uppercase opacity-70">
+                {activeTab === 'local' ? t('leaderboard.topLocal') : t('leaderboard.topGlobal')}
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            #{userRank || '--'}
+            {activeTab === 'global' && (
+              <div className="flex items-center gap-1 justify-end mt-1">
+                <span className="material-symbols-outlined text-[12px] font-black">arrow_upward</span>
+                <span className="text-[10px] font-black">12 {t('leaderboard.spots')}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
