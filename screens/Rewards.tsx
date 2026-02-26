@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Voucher } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
 import { supabase } from '../lib/supabase';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 interface RewardsProps {
   showAlert: (title: string, message: string, type?: 'error' | 'success' | 'info') => void;
@@ -14,22 +15,26 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
   const [expandedVoucher, setExpandedVoucher] = useState<string | null>(null);
 
   const [points, setPoints] = useState(0);
+  const [userSavings, setUserSavings] = useState(0);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
+  const [walletTab, setWalletTab] = useState<'active' | 'history'>('active');
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, item: any }>({ isOpen: false, item: null });
 
   useEffect(() => {
     const fetchRewardsData = async () => {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Fetch user points
+        // Fetch user points and savings
         const { data: userData } = await supabase
           .from('users')
-          .select('total_points')
+          .select('total_points, savings')
           .eq('id', user.id)
           .single();
         if (userData) {
           setPoints(userData.total_points || 0);
+          setUserSavings(userData.savings || 0);
         }
 
         // Fetch user vouchers
@@ -55,9 +60,22 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
     fetchRewardsData();
   }, []);
 
-  const handleRedeem = async (item: any) => {
+  const requestRedeem = (item: any) => {
     if (points < item.points) {
-      showAlert(t('app.error') || 'Error', t('rewards.notEnoughPoints') || 'Not enough points', 'error');
+      showAlert(t('app.error'), t('rewards.notEnoughPoints'), 'error');
+      return;
+    }
+    setConfirmModal({ isOpen: true, item });
+  };
+
+  const handleRedeem = async () => {
+    const item = confirmModal.item;
+    if (!item) return;
+
+    setConfirmModal({ isOpen: false, item: null });
+
+    if (points < item.points) {
+      showAlert(t('app.error'), t('rewards.notEnoughPoints'), 'error');
       return;
     }
 
@@ -79,7 +97,7 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
       .eq('id', user.id);
 
     if (userError) {
-      showAlert(t('app.error') || 'Error', t('app.error') || 'An error occurred', 'error');
+      showAlert(t('app.error'), t('app.error'), 'error');
       setLoading(false);
       return;
     }
@@ -112,7 +130,7 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
         expiryDate: newVoucher.expiry_date,
         status: newVoucher.status || 'active'
       }, ...vouchers]);
-      showAlert('Success!', t('rewards.redeemSuccess') || 'Voucher redeemed successfully!', 'success');
+      showAlert(t('app.success'), t('rewards.redeemSuccess'), 'success');
       setActiveView('wallet');
     }
     setLoading(false);
@@ -160,6 +178,16 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
     }
   ];
 
+  const filteredItems = shopItems.filter(item => {
+    if (activeCategory === 'All') return true;
+    if (activeCategory === 'Wash' && item.id === 'r1') return true;
+    if (activeCategory === 'Fuel' && item.id === 'r2') return true;
+    if (activeCategory === 'Food' && (item.id === 'r3' || item.id === 'r4')) return true;
+    return false;
+  });
+
+  const displayedVouchers = vouchers.filter(v => walletTab === 'active' ? v.status !== 'used' : v.status === 'used');
+
   return (
     <div className="flex flex-col min-h-screen bg-background-dark animate-fadeIn pb-32">
       {/* Header */}
@@ -201,7 +229,7 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
                   <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{t('rewards.availableBalance')}</span>
                   <div className="flex items-baseline gap-2">
                     <h1 className="text-5xl font-black text-white tracking-tighter">{points.toLocaleString()}</h1>
-                    <span className="text-primary font-bold">PTS</span>
+                    <span className="text-primary font-bold">{t('rewards.pts')}</span>
                   </div>
                 </div>
                 {/* Level Progress */}
@@ -256,8 +284,11 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
                       <h4 className="text-xl font-bold text-white mb-1 leading-tight">{t('rewards.hotDealTitle')}</h4>
                       <p className="text-xs text-slate-400">{t('rewards.hotDealDesc')}</p>
                     </div>
-                    <button className="h-10 px-5 bg-white text-black font-bold rounded-xl shadow-lg hover:bg-slate-200 active:scale-95 transition-all text-xs">
-                      400 pts
+                    <button
+                      onClick={() => requestRedeem({ brand: 'TotalEnergies', title: t('rewards.hotDealTitle'), points: 400 })}
+                      className="h-10 px-5 bg-white text-black font-bold rounded-xl shadow-lg hover:bg-slate-200 active:scale-95 transition-all text-xs"
+                    >
+                      400 {t('rewards.pts').toLowerCase()}
                     </button>
                   </div>
                 </div>
@@ -268,7 +299,7 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
             <section className="px-4 mb-8">
               <h3 className="text-lg font-bold text-white mb-4 text-left">{t('rewards.redeemNow')}</h3>
               <div className="grid grid-cols-2 gap-4">
-                {shopItems.map(item => (
+                {filteredItems.map(item => (
                   <div key={item.id} className="flex flex-col bg-surface-dark rounded-3xl overflow-hidden border border-white/5 group hover:border-primary/50 transition-colors shadow-lg">
                     <div className="h-32 w-full overflow-hidden relative">
                       <img
@@ -277,14 +308,14 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
                         src={item.image}
                       />
                       <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md rounded-full px-3 py-1 flex items-center gap-1 border border-white/10">
-                        <span className="text-primary font-black text-[10px]">{item.points} pts</span>
+                        <span className="text-primary font-black text-[10px]">{item.points} {t('rewards.pts').toLowerCase()}</span>
                       </div>
                     </div>
                     <div className="p-4 flex flex-col flex-1 text-left">
                       <h4 className="text-white font-bold text-sm mb-1 truncate">{item.title}</h4>
                       <p className="text-[10px] text-slate-500 mb-4 line-clamp-2 leading-relaxed">{item.desc}</p>
                       <button
-                        onClick={() => handleRedeem(item)}
+                        onClick={() => requestRedeem(item)}
                         disabled={loading}
                         className="mt-auto w-full py-2.5 rounded-xl bg-primary/10 text-primary font-bold text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50"
                       >
@@ -314,10 +345,10 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
                     </div>
                     <div className="flex justify-between text-[8px] text-slate-500 mb-2 uppercase font-black tracking-widest">
                       <span>{t('rewards.progress')}</span>
-                      <span>2,450 / 5,000 pts</span>
+                      <span>{points.toLocaleString()} / 5,000 {t('rewards.pts').toLowerCase()}</span>
                     </div>
                     <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
-                      <div className="h-full bg-slate-700 rounded-full" style={{ width: '49%' }}></div>
+                      <div className="h-full bg-slate-700 rounded-full transition-all" style={{ width: `${Math.min(100, Math.max(0, (points / 5000) * 100))}%` }}></div>
                     </div>
                   </div>
                 </div>
@@ -331,27 +362,37 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
               <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-primary opacity-10 blur-3xl"></div>
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 text-left">{t('rewards.lifetimeSavings')}</p>
               <div className="flex items-baseline gap-2">
-                <h2 className="text-5xl font-black tracking-tighter">350</h2>
-                <span className="text-xl font-bold text-primary">MAD</span>
+                <h2 className="text-5xl font-black tracking-tighter">{userSavings.toLocaleString()}</h2>
+                <span className="text-xl font-bold text-primary">{t('rewards.mad')}</span>
               </div>
               <div className="mt-4 flex items-center gap-2 text-[10px] text-slate-400 font-bold">
                 <span className="material-symbols-outlined text-primary text-sm">trending_up</span>
-                <span>{t('rewards.savedThisMonth')}</span>
+                <span>{t('rewards.savedThisMonth')}</span> // Kept as static for now based on UI mockup
               </div>
             </div>
 
             {/* Segmented Control */}
             <div className="p-1 bg-surface-dark rounded-2xl flex mb-6 border border-white/5">
-              <button className="flex-1 py-2 text-xs font-black rounded-xl bg-white text-black shadow-lg">{t('rewards.active')}</button>
-              <button className="flex-1 py-2 text-xs font-black text-slate-500">{t('rewards.history')}</button>
+              <button
+                onClick={() => setWalletTab('active')}
+                className={`flex-1 py-2 text-xs font-black rounded-xl transition-all ${walletTab === 'active' ? 'bg-white text-black shadow-lg' : 'text-slate-500'}`}
+              >
+                {t('rewards.active')}
+              </button>
+              <button
+                onClick={() => setWalletTab('history')}
+                className={`flex-1 py-2 text-xs font-black rounded-xl transition-all ${walletTab === 'history' ? 'bg-white text-black shadow-lg' : 'text-slate-500'}`}
+              >
+                {t('rewards.history')}
+              </button>
             </div>
 
             {/* Vouchers List */}
             <div className="space-y-4">
               {loading ? (
                 <div className="flex justify-center py-8"><div className="animate-spin size-8 border-4 border-primary border-t-transparent rounded-full" /></div>
-              ) : vouchers.length > 0 ? (
-                vouchers.map(v => (
+              ) : displayedVouchers.length > 0 ? (
+                displayedVouchers.map(v => (
                   <div
                     key={v.id}
                     className={`bg-surface-dark rounded-3xl border transition-all overflow-hidden ${expandedVoucher === v.id ? 'border-primary/40 shadow-2xl shadow-primary/10' : 'border-white/5'}`}
@@ -412,21 +453,33 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
             </div>
 
             {/* Empty State */}
-            {!loading && vouchers.length === 0 && (
+            {!loading && displayedVouchers.length === 0 && (
               <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
                 <span className="material-symbols-outlined text-6xl mb-4">savings</span>
                 <p className="text-slate-400 font-bold">{t('rewards.noVouchers')}</p>
-                <button
-                  onClick={() => setActiveView('shop')}
-                  className="mt-4 text-primary text-xs font-black uppercase tracking-widest"
-                >
-                  {t('rewards.visitShop')}
-                </button>
+                {walletTab === 'active' && (
+                  <button
+                    onClick={() => setActiveView('shop')}
+                    className="mt-4 text-primary text-xs font-black uppercase tracking-widest"
+                  >
+                    {t('rewards.visitShop')}
+                  </button>
+                )}
               </div>
             )}
           </div>
         )}
       </main>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={t('rewards.confirmRedeemTitle')}
+        message={t('rewards.confirmRedeemDesc')}
+        confirmText={t('app.confirm')}
+        cancelText={t('app.cancel')}
+        onConfirm={handleRedeem}
+        onCancel={() => setConfirmModal({ isOpen: false, item: null })}
+      />
     </div>
   );
 };

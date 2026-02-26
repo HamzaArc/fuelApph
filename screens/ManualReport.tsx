@@ -47,21 +47,20 @@ export const ManualReport: React.FC<ManualReportProps> = ({ station, onBack, onC
       </header>
 
       {/* Main Content Area - Scrollable for mobile compatibility */}
-      <main className="flex-1 w-full max-w-md flex flex-col px-4 pb-6 overflow-y-auto no-scrollbar gap-6">
-        
+      <main className="flex-1 w-full max-w-md flex flex-col px-4 pb-4 overflow-y-auto no-scrollbar gap-4">
+
         {/* Fuel Type Selector */}
         <div className="grid grid-cols-2 gap-3 shrink-0">
           {['Diesel', 'Sans Plomb'].map((type) => (
             <button
               key={type}
               onClick={() => setFuelType(type)}
-              className={`h-16 flex items-center justify-center rounded-2xl border-2 transition-all duration-200 relative overflow-hidden ${
-                fuelType === type 
-                  ? 'bg-primary border-primary text-background-dark shadow-lg shadow-primary/20' 
+              className={`h-12 flex items-center justify-center rounded-2xl border-2 transition-all duration-200 relative overflow-hidden ${fuelType === type
+                  ? 'bg-primary border-primary text-background-dark shadow-lg shadow-primary/20'
                   : 'bg-surface-dark border-transparent text-slate-400'
-              }`}
+                }`}
             >
-              <span className="text-base font-black uppercase tracking-tight">{type === 'Diesel' ? t('station.diesel') : t('station.sansPlomb')}</span>
+              <span className="text-sm font-black uppercase tracking-tight">{type === 'Diesel' ? t('station.diesel') : t('station.sansPlomb')}</span>
               {fuelType === type && (
                 <div className="absolute top-2 right-2 text-background-dark">
                   <span className="material-symbols-outlined text-sm font-black">check_circle</span>
@@ -72,47 +71,46 @@ export const ManualReport: React.FC<ManualReportProps> = ({ station, onBack, onC
         </div>
 
         {/* Price Display Section */}
-        <div className="flex flex-col items-center justify-center py-4 shrink-0">
-          <div className="flex items-center gap-8 w-full justify-center">
+        <div className="flex flex-col items-center justify-center py-2 shrink-0">
+          <div className="flex items-center gap-6 w-full justify-center">
             {/* Stepper Minus */}
-            <button 
+            <button
               onClick={() => adjustPrice(-0.01)}
-              className="size-12 flex items-center justify-center rounded-full bg-surface-dark text-slate-400 active:bg-red-500/20 active:text-red-400 transition-colors"
+              className="size-10 flex items-center justify-center rounded-full bg-surface-dark text-slate-400 active:bg-red-500/20 active:text-red-400 transition-colors"
             >
-              <span className="material-symbols-outlined text-3xl font-black">remove</span>
+              <span className="material-symbols-outlined text-2xl font-black">remove</span>
             </button>
-            
+
             {/* Main Price */}
             <div className="flex flex-col items-center">
               <div className="flex items-baseline">
-                <span className="text-[80px] font-black tracking-tighter leading-none text-white tabular-nums">
+                <span className="text-[64px] font-black tracking-tighter leading-none text-white tabular-nums">
                   {priceStr}
                 </span>
               </div>
-              <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mt-3 opacity-70">{t('map.madL')}</span>
+              <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mt-2 opacity-70">{t('map.madL')}</span>
             </div>
-            
+
             {/* Stepper Plus */}
-            <button 
+            <button
               onClick={() => adjustPrice(0.01)}
-              className="size-12 flex items-center justify-center rounded-full bg-surface-dark text-slate-400 active:bg-primary/20 active:text-primary transition-colors"
+              className="size-10 flex items-center justify-center rounded-full bg-surface-dark text-slate-400 active:bg-primary/20 active:text-primary transition-colors"
             >
-              <span className="material-symbols-outlined text-3xl font-black">add</span>
+              <span className="material-symbols-outlined text-2xl font-black">add</span>
             </button>
           </div>
         </div>
 
         {/* Numeric Keypad */}
-        <div className="grid grid-cols-3 gap-3 px-2 mb-4 shrink-0">
+        <div className="grid grid-cols-3 gap-2 px-2 mb-2 shrink-0">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "backspace"].map((key) => (
             <button
               key={key}
               onClick={() => handleKeypadPress(key)}
-              className={`h-16 rounded-2xl transition-all flex items-center justify-center active:scale-90 text-2xl font-black ${
-                key === 'backspace' 
-                  ? 'bg-surface-dark/50 text-red-500' 
+              className={`h-12 rounded-2xl transition-all flex items-center justify-center active:scale-90 text-xl font-black ${key === 'backspace'
+                  ? 'bg-surface-dark/50 text-red-500'
                   : 'bg-surface-dark text-white'
-              }`}
+                }`}
             >
               {key === 'backspace' ? <span className="material-symbols-outlined">backspace</span> : key}
             </button>
@@ -120,9 +118,9 @@ export const ManualReport: React.FC<ManualReportProps> = ({ station, onBack, onC
         </div>
 
         {/* Detected Station Info */}
-        <div className="flex items-center gap-4 p-4 bg-surface-dark/40 rounded-2xl border border-white/5 shrink-0">
-          <div className="size-11 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-            <span className="text-slate-900 font-black text-xs uppercase">{station.brand.substring(0, 2)}</span>
+        <div className="flex items-center gap-3 p-3 bg-surface-dark/40 rounded-2xl border border-white/5 shrink-0">
+          <div className="size-10 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+            <span className="text-slate-900 font-black text-[10px] uppercase">{station.brand.substring(0, 2)}</span>
           </div>
           <div className="flex flex-col flex-1 min-w-0 text-left">
             <div className="flex items-center gap-1.5">
@@ -137,17 +135,17 @@ export const ManualReport: React.FC<ManualReportProps> = ({ station, onBack, onC
         </div>
 
         {/* Submit Button */}
-        <button 
+        <button
           onClick={() => onComplete(parseFloat(priceStr), fuelType)}
-          className="w-full h-18 py-5 bg-primary text-background-dark font-black text-xl rounded-3xl shadow-[0_15px_30px_rgba(59,130,246,0.3)] hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-3 mt-2 shrink-0 mb-6 uppercase tracking-widest"
+          className="w-full h-14 bg-primary text-background-dark font-black text-lg rounded-3xl shadow-[0_15px_30px_rgba(59,130,246,0.3)] hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-3 mt-1 shrink-0 mb-4 uppercase tracking-widest"
         >
           <span>{t('manualReport.confirmPrice')}</span>
-          <span className="material-symbols-outlined font-black">check</span>
+          <span className="material-symbols-outlined font-black text-[20px]">check</span>
         </button>
       </main>
-      
+
       {/* iOS Home Indicator Spacer */}
-      <div className="h-6 w-full shrink-0" />
+      <div className="h-4 w-full shrink-0" />
     </div>
   );
 };
