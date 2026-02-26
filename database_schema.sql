@@ -10,6 +10,7 @@ CREATE TABLE users (
     verified_count INTEGER DEFAULT 0,
     savings DOUBLE PRECISION DEFAULT 0.0,
     global_rank INTEGER,
+    role TEXT DEFAULT 'user',
     vehicle JSONB
 );
 

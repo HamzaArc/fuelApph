@@ -13,6 +13,7 @@ interface MapExplorerProps {
   onViewList?: () => void;
   onAddStationInitiated: (location: { lat: number, lng: number }) => void;
   refreshKey?: number;
+  userLocation?: { lat: number, lng: number } | null;
 }
 
 const BoundsTracker: React.FC<{ onBoundsChange: (bounds: L.LatLngBounds, center: L.LatLng) => void }> = ({ onBoundsChange }) => {
@@ -42,7 +43,7 @@ const MapController: React.FC<{ targetCenter: L.LatLng | null }> = ({ targetCent
   return null;
 };
 
-export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideBottomCard, onViewList, onAddStationInitiated, refreshKey }) => {
+export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideBottomCard, onViewList, onAddStationInitiated, refreshKey, userLocation }) => {
   const { t } = useLanguage();
   const [activeFuel, setActiveFuel] = useState<FuelType>('Diesel');
   const [isBottomCardExpanded, setIsBottomCardExpanded] = useState(false);
@@ -61,6 +62,15 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
   const [dbStations, setDbStations] = useState<Station[]>([]);
   const [dynamicStations, setDynamicStations] = useState<Station[]>([]);
   const [isLoadingArea, setIsLoadingArea] = useState(false);
+  const [hasCenteredUser, setHasCenteredUser] = useState(false);
+
+  // Center on user location once when acquired
+  useEffect(() => {
+    if (userLocation && !hasCenteredUser) {
+      setTargetCenter(new L.LatLng(userLocation.lat, userLocation.lng));
+      setHasCenteredUser(true);
+    }
+  }, [userLocation, hasCenteredUser]);
 
   // Fetch stations from Supabase on mount
   useEffect(() => {
@@ -288,6 +298,23 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
           <MapController targetCenter={targetCenter} />
 
           <BoundsTracker onBoundsChange={handleBoundsChange} />
+
+          {userLocation && (
+            <Marker
+              position={[userLocation.lat, userLocation.lng]}
+              icon={L.divIcon({
+                html: renderToStaticMarkup(
+                  <div className="relative flex items-center justify-center">
+                    <div className="absolute size-8 bg-blue-500/20 rounded-full animate-ping"></div>
+                    <div className="size-4 bg-blue-500 border-2 border-white rounded-full shadow-lg z-10"></div>
+                  </div>
+                ),
+                className: 'user-location-pin',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+              })}
+            />
+          )}
 
           {!isDroppingPin && displayedStations.map(station => {
             const icon = createCustomIcon(station);

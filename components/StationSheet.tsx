@@ -3,6 +3,7 @@ import { Station } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { confirmPrice } from '../services/stationService';
+import { calculateDistance, estimateDrivingTime } from '../utils/distance';
 
 interface StationSheetProps {
   station: Station | null;
@@ -10,6 +11,7 @@ interface StationSheetProps {
   onReport: () => void;
   onManualReport: () => void;
   onVoiceReport: () => void;
+  userLocation?: { lat: number, lng: number } | null;
 }
 
 export const StationSheet: React.FC<StationSheetProps> = ({
@@ -17,7 +19,8 @@ export const StationSheet: React.FC<StationSheetProps> = ({
   onClose,
   onReport,
   onManualReport,
-  onVoiceReport
+  onVoiceReport,
+  userLocation
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -27,6 +30,18 @@ export const StationSheet: React.FC<StationSheetProps> = ({
   const startY = useRef(0);
 
   if (!station) return null;
+
+  let drivingTimeText = '';
+  if (userLocation) {
+    const dist = calculateDistance(userLocation.lat, userLocation.lng, station.location.lat, station.location.lng);
+    const mins = estimateDrivingTime(dist);
+    drivingTimeText = `${mins} min`;
+    if (dist < 1000) {
+      drivingTimeText += ` (${Math.round(dist)} m)`;
+    } else {
+      drivingTimeText += ` (${(dist / 1000).toFixed(1)} km)`;
+    }
+  }
 
   const isStale = Date.now() - station.lastUpdatedTimestamp > 86400000;
   const isHighlyTrusted = (station.verifiedByLevel || 0) > 10 && !isStale;
@@ -88,8 +103,17 @@ export const StationSheet: React.FC<StationSheetProps> = ({
                 <h1 className="text-2xl font-bold text-white tracking-tight leading-none mb-1">{station.name}</h1>
                 <div className="flex items-center gap-2 text-sm text-gray-400">
                   <span className="flex items-center gap-1 text-primary">
-                    <span className="material-symbols-outlined text-[16px]">near_me</span> {t('station.mapImport')}
+                    <span className="material-symbols-outlined text-[16px]">near_me</span> {station.isGhost ? t('station.mapImport') : t('station.station')}
                   </span>
+                  {drivingTimeText && (
+                    <>
+                      <span>•</span>
+                      <span className="flex items-center gap-1 font-bold text-white">
+                        <span className="material-symbols-outlined text-[16px] text-accent-gold">directions_car</span>
+                        {drivingTimeText}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

@@ -51,6 +51,69 @@ export const Rewards: React.FC = () => {
     fetchRewardsData();
   }, []);
 
+  const handleRedeem = async (item: any) => {
+    if (points < item.points) {
+      alert(t('rewards.notEnoughPoints') || 'Not enough points');
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setLoading(true);
+
+    // Generate a pseudo-random code
+    const vCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+    // Calculate new points
+    const newPoints = points - item.points;
+
+    // 1. Deduct points
+    const { error: userError } = await supabase
+      .from('users')
+      .update({ total_points: newPoints })
+      .eq('id', user.id);
+
+    if (userError) {
+      alert(t('app.error') || 'An error occurred');
+      setLoading(false);
+      return;
+    }
+
+    // 2. Insert voucher
+    const expiry = new Date();
+    expiry.setMonth(expiry.getMonth() + 1); // 1 month validity
+
+    const { data: newVoucher, error: voucherError } = await supabase
+      .from('vouchers')
+      .insert({
+        user_id: user.id,
+        brand: item.brand,
+        value: item.title,
+        type: 'Service',
+        points_required: item.points,
+        code: vCode,
+        expiry_date: expiry.toISOString()
+      })
+      .select()
+      .single();
+
+    if (!voucherError && newVoucher) {
+      setPoints(newPoints);
+      setVouchers([{
+        id: newVoucher.id,
+        brand: newVoucher.brand,
+        code: newVoucher.code,
+        value: newVoucher.value,
+        expiryDate: newVoucher.expiry_date,
+        status: newVoucher.status || 'active'
+      }, ...vouchers]);
+      alert(t('rewards.redeemSuccess') || 'Voucher redeemed successfully!');
+      setActiveView('wallet');
+    }
+    setLoading(false);
+  };
+
   const categories = [
     { id: 'All', label: t('rewards.cats.all'), icon: null },
     { id: 'Fuel', label: t('rewards.cats.fuel'), icon: 'local_gas_station' },
@@ -216,7 +279,11 @@ export const Rewards: React.FC = () => {
                     <div className="p-4 flex flex-col flex-1 text-left">
                       <h4 className="text-white font-bold text-sm mb-1 truncate">{item.title}</h4>
                       <p className="text-[10px] text-slate-500 mb-4 line-clamp-2 leading-relaxed">{item.desc}</p>
-                      <button className="mt-auto w-full py-2.5 rounded-xl bg-primary/10 text-primary font-bold text-xs hover:bg-primary hover:text-black transition-all">
+                      <button
+                        onClick={() => handleRedeem(item)}
+                        disabled={loading}
+                        className="mt-auto w-full py-2.5 rounded-xl bg-primary/10 text-primary font-bold text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50"
+                      >
                         {t('rewards.redeem')}
                       </button>
                     </div>

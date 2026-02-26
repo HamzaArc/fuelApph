@@ -18,6 +18,7 @@ import { Station } from './types';
 import { useLanguage } from './i18n/LanguageContext';
 import { supabase } from './lib/supabase';
 import { submitPriceReport, addNewStation } from './services/stationService';
+import { calculateDistance } from './utils/distance';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('map');
@@ -37,7 +38,10 @@ const App: React.FC = () => {
   const [earnedPoints, setEarnedPoints] = useState(0);
   const [userName, setUserName] = useState('');
   const [userLevel, setUserLevel] = useState(1);
+  const [userRole, setUserRole] = useState('user');
+  const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [stationRefreshKey, setStationRefreshKey] = useState(0);
+  const [searchFilters, setSearchFilters] = useState<{ selectedFuel?: string, selectedBrands?: string[], selectedAmenities?: string[] } | null>(null);
 
   const { t } = useLanguage();
   const { user, isLoading } = useAuth();
@@ -45,16 +49,45 @@ const App: React.FC = () => {
   // Fetch user profile data for service calls
   useEffect(() => {
     if (user) {
-      supabase.from('users').select('name, level').eq('id', user.id).single().then(({ data }) => {
+      supabase.from('users').select('name, level, role').eq('id', user.id).single().then(({ data }) => {
         if (data) {
           setUserName(data.name || '');
           setUserLevel(data.level || 1);
+          setUserRole(data.role || 'user');
         }
       });
     }
   }, [user]);
 
-  const handleReport = () => setIsScanning(true);
+  // Track geolocation
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => console.log('Geolocation error:', err),
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  const checkDistance = (targetLat: number, targetLng: number): boolean => {
+    if (userRole === 'admin') return true;
+    if (!userLocation) {
+      alert(t('app.locationRequired') || 'Location permission is required to report prices.');
+      return false;
+    }
+    const dist = calculateDistance(userLocation.lat, userLocation.lng, targetLat, targetLng);
+    if (dist > 150) {
+      alert(t('app.tooFar') || 'You must be within 150 meters of the station to report.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleReport = () => {
+    if (selectedStation && !checkDistance(selectedStation.location.lat, selectedStation.location.lng)) return;
+    setIsScanning(true);
+  };
 
   const finishContribution = async (
     stationName: string,
@@ -179,9 +212,11 @@ const App: React.FC = () => {
               <MapExplorer
                 hideBottomCard={!!selectedStation}
                 refreshKey={stationRefreshKey}
+                userLocation={userLocation}
                 onViewList={() => setViewMode('list')}
                 onStationSelect={(s) => setSelectedStation(s)}
                 onAddStationInitiated={(loc) => {
+                  if (!checkDistance(loc.lat, loc.lng)) return;
                   setPendingLocation(loc);
                   setViewMode('add_station');
                 }}
@@ -189,13 +224,16 @@ const App: React.FC = () => {
 
               <StationSheet
                 station={selectedStation}
+                userLocation={userLocation}
                 onClose={() => setSelectedStation(null)}
                 onReport={handleReport}
                 onManualReport={() => {
+                  if (selectedStation && !checkDistance(selectedStation.location.lat, selectedStation.location.lng)) return;
                   setLastViewBeforeReport('map');
                   setViewMode('manual_report');
                 }}
                 onVoiceReport={() => {
+                  if (selectedStation && !checkDistance(selectedStation.location.lat, selectedStation.location.lng)) return;
                   setLastViewBeforeReport('map');
                   setViewMode('voice_report');
                 }}
@@ -226,8 +264,8 @@ const App: React.FC = () => {
       )}
 
       {activeTab === 'search' && (
-        searchView === 'filters' ? <SearchScreen onBack={() => setActiveTab('map')} onApplyFilters={() => setSearchView('results')} />
-          : <NearbyList title={t('app.searchResults')} initialSearch="" onBack={() => setSearchView('filters')} onStationSelect={selectStation} />
+        searchView === 'filters' ? <SearchScreen onBack={() => setActiveTab('map')} onApplyFilters={(filters) => { setSearchFilters(filters); setSearchView('results'); }} />
+          : <NearbyList title={t('app.searchResults')} searchFilters={searchFilters} initialSearch="" onBack={() => setSearchView('filters')} onStationSelect={selectStation} />
       )}
 
       {activeTab === 'rewards' && <Rewards />}

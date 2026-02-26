@@ -35,6 +35,7 @@ export interface User {
   verifiedCount: number;
   savings: number;
   globalRank: number;
+  role: string;
   vehicle?: {
     model: string;
     fuel: FuelType;

@@ -9,6 +9,7 @@ interface NearbyListProps {
   title?: string;
   initialSearch?: string;
   searchPlaceholder?: string;
+  searchFilters?: { selectedFuel?: string, selectedBrands?: string[], selectedAmenities?: string[] } | null;
 }
 
 export const NearbyList: React.FC<NearbyListProps> = ({
@@ -16,14 +17,15 @@ export const NearbyList: React.FC<NearbyListProps> = ({
   onBack,
   title,
   initialSearch = "Agdal, Rabat",
-  searchPlaceholder
+  searchPlaceholder,
+  searchFilters
 }) => {
   const { t } = useLanguage();
 
   const displayTitle = title || t('nearby.nearbyStations');
   const displayPlaceholder = searchPlaceholder || t('nearby.searchArea');
 
-  const filters = [
+  const sortOptions = [
     { id: 'cheapest', label: t('nearby.cheapest') },
     { id: 'nearest', label: t('nearby.nearest') },
     { id: 'diesel', label: t('station.diesel') },
@@ -36,9 +38,27 @@ export const NearbyList: React.FC<NearbyListProps> = ({
   useEffect(() => {
     const fetchStations = async () => {
       setLoading(true);
-      const { data, error } = await supabase.from('stations').select('*').limit(20);
+      let query = supabase.from('stations').select('*').limit(50);
+
+      if (searchFilters?.selectedBrands && searchFilters.selectedBrands.length > 0) {
+        query = query.in('brand', searchFilters.selectedBrands);
+      }
+
+      const { data, error } = await query;
       if (data && !error) {
-        setStations(data);
+        let filteredData = data;
+
+        if (searchFilters?.selectedAmenities && searchFilters.selectedAmenities.length > 0) {
+          filteredData = filteredData.filter((s: any) =>
+            searchFilters.selectedAmenities!.every(a => s.amenities?.includes(a))
+          );
+        }
+
+        if (searchFilters?.selectedFuel) {
+          filteredData = filteredData.filter((s: any) => s.prices && s.prices[searchFilters.selectedFuel as keyof typeof s.prices]);
+        }
+
+        setStations(filteredData as Station[]);
       }
       setLoading(false);
     };
@@ -71,14 +91,14 @@ export const NearbyList: React.FC<NearbyListProps> = ({
         </div>
 
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-          {filters.map((filter, i) => (
+          {sortOptions.map((opt, i) => (
             <button
-              key={filter.id}
+              key={opt.id}
               className={`flex-shrink-0 flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold border transition-all ${i === 0 ? 'bg-primary border-primary text-background-dark shadow-primary/20 shadow-lg' : 'bg-surface-dark border-white/10 text-slate-300'
                 }`}
             >
               <span className="material-symbols-outlined text-[18px]">{i === 0 ? 'attach_money' : 'near_me'}</span>
-              {filter.label}
+              {opt.label}
             </button>
           ))}
         </div>
@@ -127,7 +147,7 @@ export const NearbyList: React.FC<NearbyListProps> = ({
                       </div>
                       <div className="text-right">
                         <span className="block text-2xl font-black text-primary leading-none tracking-tight">
-                          {s.prices.Diesel} <span className="text-xs font-bold">DH</span>
+                          {searchFilters?.selectedFuel && s.prices ? s.prices[searchFilters.selectedFuel as keyof typeof s.prices] : s.prices?.Diesel || '--'} <span className="text-xs font-bold">DH</span>
                         </span>
                       </div>
                     </div>
