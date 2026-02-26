@@ -163,6 +163,7 @@ const App: React.FC = () => {
             <>
               <MapExplorer
                 hideBottomCard={!!selectedStation}
+                refreshKey={stationRefreshKey}
                 onViewList={() => setViewMode('list')}
                 onStationSelect={(s) => setSelectedStation(s)}
                 onAddStationInitiated={(loc) => {

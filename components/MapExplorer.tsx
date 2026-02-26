@@ -12,6 +12,7 @@ interface MapExplorerProps {
   hideBottomCard?: boolean;
   onViewList?: () => void;
   onAddStationInitiated: (location: { lat: number, lng: number }) => void;
+  refreshKey?: number;
 }
 
 const BoundsTracker: React.FC<{ onBoundsChange: (bounds: L.LatLngBounds, center: L.LatLng) => void }> = ({ onBoundsChange }) => {
@@ -41,7 +42,7 @@ const MapController: React.FC<{ targetCenter: L.LatLng | null }> = ({ targetCent
   return null;
 };
 
-export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideBottomCard, onViewList, onAddStationInitiated }) => {
+export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideBottomCard, onViewList, onAddStationInitiated, refreshKey }) => {
   const { t } = useLanguage();
   const [activeFuel, setActiveFuel] = useState<FuelType>('Diesel');
   const [isBottomCardExpanded, setIsBottomCardExpanded] = useState(false);
@@ -71,8 +72,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
     };
     fetchSupabaseStations();
 
-    // Optional: Subscribe to Supabase realtime here if needed
-  }, []);
+  }, [refreshKey]);
 
   const fuelTypes: { id: FuelType; label: string }[] = [
     { id: 'Diesel', label: t('station.diesel') },

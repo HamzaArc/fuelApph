@@ -97,6 +97,15 @@ ALTER TABLE log_entries ENABLE ROW LEVEL SECURITY;
 -- Stations: Globally readable by everyone
 CREATE POLICY "Stations are globally readable" ON stations FOR SELECT USING (true);
 
+-- Stations: Authenticated users can insert
+CREATE POLICY "Authenticated users can insert stations" ON stations FOR INSERT TO authenticated WITH CHECK (true);
+
+-- Stations: Authenticated users can update
+CREATE POLICY "Authenticated users can update stations" ON stations FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+
+-- Price Reports: Users can manage own records
+CREATE POLICY "Users can manage own price reports" ON price_reports FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
 -- Users: Read/Insert/Update their own profile
 CREATE POLICY "Users can manage own profile" ON users FOR ALL USING (auth.uid() = id);
 
