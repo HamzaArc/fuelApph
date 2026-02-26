@@ -111,7 +111,8 @@ const en: Translations = {
     cheapest: 'Cheapest',
     nearest: 'Nearest',
     verified: 'Verified',
-    bestPrice: 'Best Price'
+    bestPrice: 'Best Price',
+    noStationsFound: 'No stations found matching your criteria.'
   },
   search: {
     findFuel: 'Find Fuel',
@@ -127,7 +128,8 @@ const en: Translations = {
     filterBrand: 'Filter by Brand',
     amenities: 'Amenities',
     fuelType: 'Fuel Type',
-    applyFilters: 'Apply Filters'
+    applyFilters: 'Apply Filters',
+    showResults: 'Show Results'
   },
   amenities: {
     'Café': 'Café',
@@ -437,7 +439,8 @@ const fr: Translations = {
     cheapest: 'Moins cher',
     nearest: 'Plus proche',
     verified: 'Vérifié',
-    bestPrice: 'Meilleur prix'
+    bestPrice: 'Meilleur prix',
+    noStationsFound: 'Aucune station trouvée pour ces critères.'
   },
   search: {
     findFuel: 'Trouver du carburant',
@@ -453,7 +456,8 @@ const fr: Translations = {
     filterBrand: 'Filtrer par marque',
     amenities: 'Services',
     fuelType: 'Carburant',
-    applyFilters: 'Appliquer les filtres'
+    applyFilters: 'Appliquer les filtres',
+    showResults: 'Afficher les résultats'
   },
   amenities: {
     'Café': 'Café',

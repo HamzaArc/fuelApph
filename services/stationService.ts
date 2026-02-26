@@ -124,13 +124,44 @@ export async function confirmPrice(
     fuelType: string = 'Diesel',
     currentPrice: number = 0
 ): Promise<SubmitResult> {
-    return submitPriceReport({
-        userId,
-        stationId,
-        fuelType,
-        price: currentPrice,
-        reportType: 'confirm',
-    });
+    try {
+        // 1. Prevent users from confirming a price they just reported/added
+        const { data: station } = await supabase
+            .from('stations')
+            .select('verified_by')
+            .eq('id', stationId)
+            .single();
+
+        if (station?.verified_by === userId) {
+            return { success: false, pointsEarned: 0, error: 'You cannot confirm a price you just reported.' };
+        }
+
+        // 2. Prevent users from reporting/confirming the same station twice in one day
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const { data: recentReports } = await supabase
+            .from('price_reports')
+            .select('id')
+            .eq('station_id', stationId)
+            .eq('user_id', userId)
+            .gte('created_at', startOfDay.toISOString());
+
+        if (recentReports && recentReports.length > 0) {
+            return { success: false, pointsEarned: 0, error: 'You have already reported or confirmed this station today.' };
+        }
+
+        return submitPriceReport({
+            userId,
+            stationId,
+            fuelType,
+            price: currentPrice,
+            reportType: 'confirm',
+        });
+    } catch (err: any) {
+        console.error('Error confirming price:', err);
+        return { success: false, pointsEarned: 0, error: err.message };
+    }
 }
 
 /**

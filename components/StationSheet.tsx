@@ -13,6 +13,7 @@ interface StationSheetProps {
   onVoiceReport: () => void;
   userLocation?: { lat: number, lng: number } | null;
   onValidateDistance: () => boolean;
+  showAlert: (title: string, message: string, type?: 'error' | 'success' | 'info') => void;
 }
 
 export const StationSheet: React.FC<StationSheetProps> = ({
@@ -22,7 +23,8 @@ export const StationSheet: React.FC<StationSheetProps> = ({
   onManualReport,
   onVoiceReport,
   userLocation,
-  onValidateDistance
+  onValidateDistance,
+  showAlert
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -71,16 +73,23 @@ export const StationSheet: React.FC<StationSheetProps> = ({
 
   const handleOneTap = async () => {
     if (!onValidateDistance()) return;
-    setOneTapSuccess(true);
+
     if (user && station) {
-      await confirmPrice(
+      const result = await confirmPrice(
         station.id,
         user.id,
         'Diesel',
         station.prices?.Diesel || 0
       );
+
+      if (!result.success) {
+        showAlert(t('app.error') || 'Error', result.error || 'Failed to confirm price', 'error');
+        return;
+      }
+
+      setOneTapSuccess(true);
+      setTimeout(() => setOneTapSuccess(false), 3000);
     }
-    setTimeout(() => setOneTapSuccess(false), 3000);
   };
 
   return (

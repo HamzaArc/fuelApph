@@ -244,6 +244,7 @@ const App: React.FC = () => {
                 station={selectedStation}
                 userLocation={userLocation}
                 onClose={() => setSelectedStation(null)}
+                showAlert={showAlert}
                 onReport={handleReport}
                 onValidateDistance={() => selectedStation ? checkDistance(selectedStation.location.lat, selectedStation.location.lng) : false}
                 onManualReport={() => {
@@ -261,7 +262,7 @@ const App: React.FC = () => {
           )}
 
           {viewMode === 'list' && (
-            <NearbyList onBack={() => setViewMode('map')} onStationSelect={selectStation} />
+            <NearbyList onBack={() => setViewMode('map')} onStationSelect={selectStation} userLocation={userLocation} />
           )}
 
           {viewMode === 'add_station' && (
@@ -284,7 +285,7 @@ const App: React.FC = () => {
 
       {activeTab === 'search' && (
         searchView === 'filters' ? <SearchScreen onBack={() => setActiveTab('map')} onApplyFilters={(filters) => { setSearchFilters(filters); setSearchView('results'); }} />
-          : <NearbyList title={t('app.searchResults')} searchFilters={searchFilters} initialSearch="" onBack={() => setSearchView('filters')} onStationSelect={selectStation} />
+          : <NearbyList title={t('app.searchResults')} searchFilters={searchFilters} initialSearch="" onBack={() => setSearchView('filters')} onStationSelect={selectStation} userLocation={userLocation} />
       )}
 
       {activeTab === 'rewards' && <Rewards showAlert={showAlert} />}

@@ -6,6 +6,7 @@ import { FuelType, Station } from '../types';
 import { fetchStationsInBounds } from '../services/placesService';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../i18n/LanguageContext';
+import { calculateDistance } from '../utils/distance';
 
 interface MapExplorerProps {
   onStationSelect: (station: Station) => void;
@@ -14,6 +15,7 @@ interface MapExplorerProps {
   onAddStationInitiated: (location: { lat: number, lng: number }) => void;
   refreshKey?: number;
   userLocation?: { lat: number, lng: number } | null;
+  selectedStation?: Station | null;
 }
 
 const BoundsTracker: React.FC<{ onBoundsChange: (bounds: L.LatLngBounds, center: L.LatLng) => void }> = ({ onBoundsChange }) => {
@@ -33,17 +35,17 @@ const BoundsTracker: React.FC<{ onBoundsChange: (bounds: L.LatLngBounds, center:
   return null;
 };
 
-const MapController: React.FC<{ targetCenter: L.LatLng | null }> = ({ targetCenter }) => {
+const MapController: React.FC<{ targetCenter: L.LatLng | null; targetZoom?: number | null }> = ({ targetCenter, targetZoom }) => {
   const map = useMap();
   useEffect(() => {
     if (targetCenter) {
-      map.flyTo(targetCenter, 14, { animate: true, duration: 1.5 });
+      map.flyTo(targetCenter, targetZoom || map.getZoom(), { animate: true, duration: 1.5 });
     }
-  }, [targetCenter, map]);
+  }, [targetCenter, targetZoom, map]);
   return null;
 };
 
-export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideBottomCard, onViewList, onAddStationInitiated, refreshKey, userLocation }) => {
+export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideBottomCard, onViewList, onAddStationInitiated, refreshKey, userLocation, selectedStation }) => {
   const { t } = useLanguage();
   const [activeFuel, setActiveFuel] = useState<FuelType>('Diesel');
   const [isBottomCardExpanded, setIsBottomCardExpanded] = useState(false);
@@ -54,6 +56,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
 
   const [searchQuery, setSearchQuery] = useState('');
   const [targetCenter, setTargetCenter] = useState<L.LatLng | null>(null);
+  const [targetZoom, setTargetZoom] = useState<number | null>(null);
 
   const [touchStart, setTouchStart] = useState(0);
   const [isRouteMode, setIsRouteMode] = useState(false);
@@ -66,11 +69,20 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
 
   // Center on user location once when acquired
   useEffect(() => {
-    if (userLocation && !hasCenteredUser) {
+    if (userLocation && !hasCenteredUser && !selectedStation) {
       setTargetCenter(new L.LatLng(userLocation.lat, userLocation.lng));
+      setTargetZoom(14); // Good initial zoom
       setHasCenteredUser(true);
     }
-  }, [userLocation, hasCenteredUser]);
+  }, [userLocation, hasCenteredUser, selectedStation]);
+
+  // Listen for externally selected stations (e.g. from Search)
+  useEffect(() => {
+    if (selectedStation?.location) {
+      setTargetCenter(new L.LatLng(selectedStation.location.lat, selectedStation.location.lng));
+      setTargetZoom(16); // Close up zoom
+    }
+  }, [selectedStation]);
 
   // Fetch stations from Supabase on mount
   useEffect(() => {
@@ -143,7 +155,17 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
     return () => clearTimeout(debounceTimer);
   }, [boundsKey]);
 
-  const displayedStations = [...dbStations, ...dynamicStations];
+  const displayedStations = useMemo(() => {
+    // Filter out dynamic stations that are too close (e.g., within 50 meters) to any dbStation
+    const filteredDynamic = dynamicStations.filter(dyn => {
+      // Return true if NO dbStation is within 50m
+      return !dbStations.some(db => {
+        const dist = calculateDistance(dyn.location.lat, dyn.location.lng, db.location.lat, db.location.lng);
+        return dist < 50; // 50 meters threshold
+      });
+    });
+    return [...dbStations, ...filteredDynamic];
+  }, [dbStations, dynamicStations]);
 
   const cheapestNearby = useMemo(() => {
     const realStations = displayedStations.filter(s => !s.isGhost && s.prices[activeFuel]);
@@ -294,8 +316,8 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
 
       <div className="absolute inset-0 z-0">
         <MapContainer center={[33.5890, -7.6310]} zoom={14} zoomControl={false} className="h-full w-full">
-          <TileLayer attribution='© CARTO' url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
-          <MapController targetCenter={targetCenter} />
+          <TileLayer attribution='&copy; CARTO' url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+          <MapController targetCenter={targetCenter} targetZoom={targetZoom} />
 
           <BoundsTracker onBoundsChange={handleBoundsChange} />
 

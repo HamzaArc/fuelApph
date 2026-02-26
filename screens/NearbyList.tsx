@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Station } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
 import { supabase } from '../lib/supabase';
@@ -9,8 +9,11 @@ interface NearbyListProps {
   title?: string;
   initialSearch?: string;
   searchPlaceholder?: string;
-  searchFilters?: { selectedFuel?: string, selectedBrands?: string[], selectedAmenities?: string[] } | null;
+  searchFilters?: { query?: string, selectedFuel?: string, selectedBrands?: string[], selectedAmenities?: string[], sortValue?: string } | null;
+  userLocation?: { lat: number, lng: number } | null;
 }
+
+import { calculateDistance } from '../utils/distance';
 
 export const NearbyList: React.FC<NearbyListProps> = ({
   onStationSelect,
@@ -34,6 +37,7 @@ export const NearbyList: React.FC<NearbyListProps> = ({
 
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeSort, setActiveSort] = useState<string>(searchFilters?.sortValue || 'nearest');
 
   useEffect(() => {
     const fetchStations = async () => {
@@ -58,12 +62,64 @@ export const NearbyList: React.FC<NearbyListProps> = ({
           filteredData = filteredData.filter((s: any) => s.prices && s.prices[searchFilters.selectedFuel as keyof typeof s.prices]);
         }
 
+        if (searchFilters?.query && searchFilters.query.trim() !== '') {
+          const q = searchFilters.query.toLowerCase();
+          filteredData = filteredData.filter((s: any) =>
+            s.name.toLowerCase().includes(q) ||
+            s.location.city.toLowerCase().includes(q) ||
+            s.location.address.toLowerCase().includes(q)
+          );
+        }
+
         setStations(filteredData as Station[]);
       }
       setLoading(false);
     };
     fetchStations();
+    fetchStations();
   }, []);
+
+  const sortedStations = useMemo(() => {
+    let result = [...stations];
+    const fuelType = searchFilters?.selectedFuel as keyof Station['prices'] || 'Diesel';
+
+    if (activeSort === 'cheapest') {
+      result.sort((a, b) => {
+        const priceA = a.prices && a.prices[fuelType] ? a.prices[fuelType]! : 999;
+        const priceB = b.prices && b.prices[fuelType] ? b.prices[fuelType]! : 999;
+        return priceA - priceB;
+      });
+    } else if (activeSort === 'nearest') {
+      result.sort((a: any, b: any) => {
+        const distA = a.calculatedDistance || 999;
+        const distB = b.calculatedDistance || 999;
+        return distA - distB;
+      });
+    } else if (activeSort === 'verified') {
+      // Simplistic sort by last updated string or placeholder
+      result.sort((a, b) => {
+        const ta = a.lastUpdated === 'Just now' ? 0 : 1;
+        const tb = b.lastUpdated === 'Just now' ? 0 : 1;
+        return ta - tb;
+      });
+    }
+    return result;
+  }, [stations, activeSort, searchFilters]);
+
+  const bestPrice = useMemo(() => {
+    if (sortedStations.length === 0) return null;
+    const fuelType = searchFilters?.selectedFuel as keyof Station['prices'] || 'Diesel';
+    let minPrice: number | null = null;
+
+    sortedStations.forEach(s => {
+      if (s.prices && s.prices[fuelType]) {
+        if (minPrice === null || s.prices[fuelType]! < minPrice) {
+          minPrice = s.prices[fuelType]!;
+        }
+      }
+    });
+    return minPrice;
+  }, [sortedStations, searchFilters]);
 
   return (
     <div className="flex flex-col h-full bg-background-dark animate-fadeIn">
@@ -94,10 +150,11 @@ export const NearbyList: React.FC<NearbyListProps> = ({
           {sortOptions.map((opt, i) => (
             <button
               key={opt.id}
-              className={`flex-shrink-0 flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold border transition-all ${i === 0 ? 'bg-primary border-primary text-background-dark shadow-primary/20 shadow-lg' : 'bg-surface-dark border-white/10 text-slate-300'
+              onClick={() => setActiveSort(opt.id)}
+              className={`flex-shrink-0 flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold border transition-all ${activeSort === opt.id ? 'bg-primary border-primary text-background-dark shadow-primary/20 shadow-lg' : 'bg-surface-dark border-white/10 text-slate-300'
                 }`}
             >
-              <span className="material-symbols-outlined text-[18px]">{i === 0 ? 'attach_money' : 'near_me'}</span>
+              <span className="material-symbols-outlined text-[18px]">{opt.id === 'cheapest' ? 'attach_money' : opt.id === 'nearest' ? 'near_me' : opt.id === 'verified' ? 'verified' : 'local_gas_station'}</span>
               {opt.label}
             </button>
           ))}
@@ -107,16 +164,19 @@ export const NearbyList: React.FC<NearbyListProps> = ({
       <main className="flex-1 overflow-y-auto px-4 py-6 space-y-4 pb-24 no-scrollbar">
         {loading ? (
           <div className="flex justify-center p-8"><div className="animate-spin size-8 border-4 border-primary border-t-transparent rounded-full" /></div>
-        ) : stations.length === 0 ? (
+        ) : sortedStations.length === 0 ? (
           <div className="text-center text-slate-400 p-8">{t('nearby.noStationsFound') || 'No stations found'}</div>
         ) : (
-          stations.map((s) => {
-            const isBest = s.prices.Diesel === 13.40; // You might want to calculate the actual best price dynamically later
+          sortedStations.map((s) => {
+            const fuelType = searchFilters?.selectedFuel as keyof typeof s.prices || 'Diesel';
+            const price = s.prices ? s.prices[fuelType] : null;
+            const isBest = price !== null && bestPrice !== null && price <= bestPrice;
+
             return (
               <div
                 key={s.id}
                 onClick={() => onStationSelect(s)}
-                className={`relative group bg-surface-dark rounded-2xl p-5 border transition-all active:scale-[0.98] ${isBest ? 'border-primary/40 shadow-xl shadow-primary/5' : 'border-white/5'
+                className={`relative group bg-surface-dark rounded-2xl p-5 border transition-all active:scale-[0.98] cursor-pointer ${isBest ? 'border-primary/40 shadow-xl shadow-primary/5' : 'border-white/5'
                   }`}
               >
                 {isBest && (
@@ -134,20 +194,20 @@ export const NearbyList: React.FC<NearbyListProps> = ({
                     <h3 className="text-lg font-bold text-white truncate pr-16 leading-tight">{s.name}</h3>
                     <p className="text-slate-500 text-xs truncate mb-4">{s.location.address}, {s.location.city}</p>
 
-                    <div className="flex items-baseline justify-between border-t border-white/5 pt-4">
+                    <div className="flex items-baseline justify-between border-t border-white/5 pt-4 mt-2">
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1 text-slate-400 text-xs font-bold">
                           <span className="material-symbols-outlined text-[16px]">distance</span>
-                          {s.distance}
+                          {(s as any).calculatedDistance ? `${(s as any).calculatedDistance.toFixed(1)} km` : s.distance}
                         </div>
                         <div className="flex items-center gap-1 text-primary text-xs font-black">
                           <span className="material-symbols-outlined text-[16px] fill-1">verified</span>
-                          {s.lastUpdated}
+                          {s.lastUpdated || '2h'}
                         </div>
                       </div>
                       <div className="text-right">
                         <span className="block text-2xl font-black text-primary leading-none tracking-tight">
-                          {searchFilters?.selectedFuel && s.prices ? s.prices[searchFilters.selectedFuel as keyof typeof s.prices] : s.prices?.Diesel || '--'} <span className="text-xs font-bold">DH</span>
+                          {price || '--'} <span className="text-xs font-bold">DH</span>
                         </span>
                       </div>
                     </div>

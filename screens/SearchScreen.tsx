@@ -8,6 +8,7 @@ interface SearchScreenProps {
 
 export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilters }) => {
   const { t } = useLanguage();
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedFuel, setSelectedFuel] = useState<'Diesel' | 'Sans Plomb'>('Diesel');
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
@@ -34,16 +35,27 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilte
   ];
 
   const toggleBrand = (id: string) => {
-    setSelectedBrands(prev => 
+    setSelectedBrands(prev =>
       prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id]
     );
   };
 
   const toggleAmenity = (id: string) => {
-    setSelectedAmenities(prev => 
+    setSelectedAmenities(prev =>
       prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]
     );
   };
+
+  const handleApply = () => {
+    onApplyFilters({
+      query: searchQuery,
+      selectedFuel,
+      selectedBrands,
+      selectedAmenities
+    });
+  };
+
+  const hasFiltersOrQuery = searchQuery.trim().length > 0 || selectedBrands.length > 0 || selectedAmenities.length > 0;
 
   return (
     <div className="flex flex-col h-full bg-background-dark animate-fadeIn overflow-hidden">
@@ -60,9 +72,11 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilte
           <div className="absolute inset-y-0 left-4 flex items-center text-primary">
             <span className="material-symbols-outlined text-xl">search</span>
           </div>
-          <input 
-            type="text" 
-            placeholder={t('search.searchPlaceholder')} 
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('search.searchPlaceholder')}
             className="w-full bg-surface-dark border-none rounded-2xl py-4 pl-12 pr-12 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-primary/50"
           />
           <button className="absolute inset-y-0 right-4 flex items-center text-primary">
@@ -76,11 +90,15 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilte
             { id: 'nearest', label: t('search.nearest'), icon: 'near_me' },
             { id: 'rewards', label: t('search.myRewards'), icon: 'stars' },
           ].map((f, i) => (
-            <button 
+            <button
               key={f.id}
-              className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest border transition-all ${
-                i === 0 ? 'bg-primary border-primary text-background-dark shadow-lg shadow-primary/20' : 'bg-surface-dark border-white/5 text-slate-400'
-              }`}
+              onClick={() => {
+                if (f.id === 'cheapest' || f.id === 'nearest') {
+                  onApplyFilters({ query: '', selectedFuel, selectedBrands: [], selectedAmenities: [], sortValue: f.id });
+                }
+              }}
+              className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest border transition-all ${i === 0 ? 'bg-primary border-primary text-background-dark shadow-lg shadow-primary/20' : 'bg-surface-dark border-white/5 text-slate-400 hover:bg-surface-dark/80 active:scale-95'
+                }`}
             >
               <span className="material-symbols-outlined text-lg">{f.icon}</span>
               {f.label}
@@ -91,14 +109,18 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilte
         <div className="mb-10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-white font-black text-lg">{t('search.recentSearches')}</h2>
-            <button className="text-primary text-xs font-bold">{t('search.clear')}</button>
+            <button className="text-primary text-xs font-bold active:opacity-50 transition-opacity" onClick={() => { setSearchQuery(''); setSelectedBrands([]); setSelectedAmenities([]); }}>{t('search.clear')}</button>
           </div>
           <div className="space-y-3">
             {[
               { name: 'Station Shell - Maarif', meta: `Casablanca • 2.4 km ${t('search.away')}` },
               { name: 'TotalEnergies Agdal', meta: `Rabat • 12 km ${t('search.away')}` },
             ].map((s, i) => (
-              <div key={i} className="flex items-center justify-between bg-surface-dark/40 p-4 rounded-2xl border border-white/5">
+              <div
+                key={i}
+                className="flex items-center justify-between bg-surface-dark/40 p-4 rounded-2xl border border-white/5 active:scale-[0.98] transition-all cursor-pointer hover:bg-surface-dark/60"
+                onClick={() => onApplyFilters({ query: s.name, selectedFuel, selectedBrands: [], selectedAmenities: [] })}
+              >
                 <div className="flex items-center gap-4">
                   <div className="size-10 bg-white/5 rounded-full flex items-center justify-center text-slate-500">
                     <span className="material-symbols-outlined text-xl">schedule</span>
@@ -118,7 +140,11 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilte
           <h2 className="text-white font-black text-lg mb-4">{t('search.popularCities')}</h2>
           <div className="grid grid-cols-2 gap-4 mb-4">
             {cities.slice(0, 2).map((city) => (
-              <div key={city.name} className="relative h-32 rounded-3xl overflow-hidden group">
+              <div
+                key={city.name}
+                className="relative h-32 rounded-3xl overflow-hidden group cursor-pointer active:scale-95 transition-all"
+                onClick={() => onApplyFilters({ query: city.name, selectedFuel, selectedBrands: [], selectedAmenities: [] })}
+              >
                 <img src={city.img} alt={city.name} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-110" referrerPolicy="no-referrer" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-4">
@@ -131,7 +157,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilte
               </div>
             ))}
           </div>
-          <div className="relative h-32 rounded-3xl overflow-hidden group">
+          <div
+            className="relative h-32 rounded-3xl overflow-hidden group cursor-pointer active:scale-95 transition-all"
+            onClick={() => onApplyFilters({ query: cities[2].name, selectedFuel, selectedBrands: [], selectedAmenities: [] })}
+          >
             <img src={cities[2].img} alt={cities[2].name} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-110" referrerPolicy="no-referrer" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute bottom-4 left-4">
@@ -149,11 +178,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilte
           <div className="flex gap-4 overflow-x-auto no-scrollbar">
             {brands.map((brand) => (
               <div key={brand.id} className="flex flex-col items-center gap-2">
-                <button 
+                <button
                   onClick={() => toggleBrand(brand.id)}
-                  className={`size-16 rounded-3xl flex items-center justify-center text-sm font-black transition-all border-2 ${
-                    selectedBrands.includes(brand.id) ? 'border-primary ring-4 ring-primary/10' : 'border-white/5'
-                  } ${brand.color}`}
+                  className={`size-16 rounded-3xl flex items-center justify-center text-sm font-black transition-all border-2 ${selectedBrands.includes(brand.id) ? 'border-primary ring-4 ring-primary/10' : 'border-white/5'
+                    } ${brand.color}`}
                 >
                   {brand.code}
                 </button>
@@ -168,11 +196,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilte
           <div className="flex gap-4 overflow-x-auto no-scrollbar">
             {amenities.map((amenity) => (
               <div key={amenity.id} className="flex flex-col items-center gap-2">
-                <button 
+                <button
                   onClick={() => toggleAmenity(amenity.id)}
-                  className={`size-14 rounded-2xl flex items-center justify-center transition-all border ${
-                    selectedAmenities.includes(amenity.id) ? 'bg-primary/20 border-primary text-primary' : 'bg-surface-dark border-white/5 text-slate-500'
-                  }`}
+                  className={`size-14 rounded-2xl flex items-center justify-center transition-all border ${selectedAmenities.includes(amenity.id) ? 'bg-primary/20 border-primary text-primary' : 'bg-surface-dark border-white/5 text-slate-500'
+                    }`}
                 >
                   <span className="material-symbols-outlined">{amenity.icon}</span>
                 </button>
@@ -189,9 +216,8 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilte
               <button
                 key={type}
                 onClick={() => setSelectedFuel(type)}
-                className={`flex-1 py-4 rounded-xl text-sm font-black transition-all ${
-                  selectedFuel === type ? 'bg-primary text-background-dark shadow-lg' : 'text-slate-500'
-                }`}
+                className={`flex-1 py-4 rounded-xl text-sm font-black transition-all ${selectedFuel === type ? 'bg-primary text-background-dark shadow-lg' : 'text-slate-500'
+                  }`}
               >
                 {type === 'Diesel' ? t('station.diesel') : t('station.sansPlomb')}
               </button>
@@ -200,15 +226,16 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilte
         </div>
       </div>
 
-      <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none px-6">
-        <button 
-          onClick={() => onApplyFilters({ selectedFuel, selectedBrands, selectedAmenities })}
-          className="pointer-events-auto bg-primary text-background-dark font-black px-6 py-3 rounded-full shadow-[0_10px_30px_rgba(59,130,246,0.3)] flex items-center gap-2 active:scale-95 transition-all text-xs uppercase tracking-widest border border-white/20"
-        >
-          <span className="material-symbols-outlined text-lg">filter_alt</span>
-          {t('search.applyFilters')}
-        </button>
-      </div>
+      {hasFiltersOrQuery && (
+        <div className="absolute bottom-6 left-6 right-6 z-50 animate-slide-up">
+          <button
+            onClick={handleApply}
+            className="w-full bg-primary text-background-dark font-black px-6 py-4 rounded-2xl shadow-[0_0_30px_rgba(59,130,246,0.5)] active:scale-[0.98] transition-all text-sm uppercase tracking-widest"
+          >
+            {t('search.showResults') || 'Show Results'}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
