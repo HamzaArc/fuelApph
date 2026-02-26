@@ -5,16 +5,18 @@ interface ContributionSuccessProps {
   onDone: () => void;
   summary: { station: string; fuel: string; price: number } | null;
   isPioneer?: boolean;
+  earnedPoints?: number;
 }
 
-export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone, summary, isPioneer }) => {
+export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone, summary, isPioneer, earnedPoints: earnedPointsProp }) => {
   const { t } = useLanguage();
   const [isSpinning, setIsSpinning] = useState(!isPioneer);
   const [displayPoints, setDisplayPoints] = useState(0);
-  
+
   const targetPoints = useMemo(() => {
+    if (earnedPointsProp !== undefined && earnedPointsProp > 0) return earnedPointsProp;
     return isPioneer ? 200 : Math.floor(Math.random() * 481) + 20;
-  }, [isPioneer]);
+  }, [isPioneer, earnedPointsProp]);
 
   useEffect(() => {
     if (!isSpinning) {
@@ -29,10 +31,10 @@ export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone
       if (!startTime) startTime = timestamp;
       const progress = timestamp - startTime;
       const percentage = Math.min(progress / duration, 1);
-      
+
       // Easing function for smooth slowdown (easeOutQuart)
       const easeOutQuart = 1 - Math.pow(1 - percentage, 4);
-      
+
       setDisplayPoints(Math.floor(easeOutQuart * targetPoints));
 
       if (progress < duration) {
@@ -52,13 +54,12 @@ export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone
     <div className="fixed inset-0 z-[2000] bg-background-dark font-sans antialiased flex flex-col items-center justify-center overflow-y-auto no-scrollbar animate-fadeIn">
       {/* Dynamic Background FX */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden h-full w-full">
-        <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 w-[150%] h-[150%] blur-[100px] pointer-events-none transition-all duration-1000 ${
-          isSpinning ? 'bg-[radial-gradient(circle,rgba(59,130,246,0.2)_0%,transparent_70%)] animate-pulse' : 'bg-[radial-gradient(circle,rgba(251,191,36,0.15)_0%,transparent_70%)]'
-        }`}></div>
+        <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 w-[150%] h-[150%] blur-[100px] pointer-events-none transition-all duration-1000 ${isSpinning ? 'bg-[radial-gradient(circle,rgba(59,130,246,0.2)_0%,transparent_70%)] animate-pulse' : 'bg-[radial-gradient(circle,rgba(251,191,36,0.15)_0%,transparent_70%)]'
+          }`}></div>
       </div>
 
       <div className="w-full max-w-md min-h-full flex flex-col px-6 py-12 relative z-10">
-        
+
         {/* Top Section: Celebration */}
         <div className="flex flex-col items-center mb-8 mt-10">
           <div className="text-center space-y-2 mb-8">
@@ -71,18 +72,16 @@ export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone
           </div>
 
           {/* THE SMOOTH COUNT-UP REWARD DISPLAY */}
-          <div className={`relative flex flex-col items-center justify-center w-full aspect-square max-w-[280px] rounded-[3rem] border-4 transition-all duration-500 shadow-2xl ${
-            isSpinning 
-              ? 'border-primary/50 bg-surface-darker shadow-[0_0_50px_rgba(59,130,246,0.3)] animate-pulse' 
+          <div className={`relative flex flex-col items-center justify-center w-full aspect-square max-w-[280px] rounded-[3rem] border-4 transition-all duration-500 shadow-2xl ${isSpinning
+              ? 'border-primary/50 bg-surface-darker shadow-[0_0_50px_rgba(59,130,246,0.3)] animate-pulse'
               : 'border-accent-gold/80 bg-gradient-to-br from-surface-dark to-surface-darker shadow-[0_0_80px_rgba(251,191,36,0.4)] scale-105'
-          }`}>
+            }`}>
             <span className={`text-sm font-black uppercase tracking-[0.3em] mb-2 transition-colors ${isSpinning ? 'text-primary' : 'text-accent-gold'}`}>
               {isSpinning ? t('contributionSuccess.calculating') : (isPioneer ? t('contributionSuccess.pioneerBonus') : t('contributionSuccess.mysteryReward'))}
             </span>
             <div className="flex items-baseline gap-2 tabular-nums">
-              <span className={`text-[80px] font-black leading-none tracking-tighter transition-colors ${
-                isSpinning ? 'text-white blur-[1px]' : 'text-accent-gold drop-shadow-[0_0_20px_rgba(251,191,36,0.8)]'
-              }`}>
+              <span className={`text-[80px] font-black leading-none tracking-tighter transition-colors ${isSpinning ? 'text-white blur-[1px]' : 'text-accent-gold drop-shadow-[0_0_20px_rgba(251,191,36,0.8)]'
+                }`}>
                 +{displayPoints}
               </span>
             </div>
@@ -116,14 +115,13 @@ export const ContributionSuccess: React.FC<ContributionSuccessProps> = ({ onDone
 
         {/* Bottom Section: Actions */}
         <div className="mt-8 space-y-4 w-full">
-          <button 
+          <button
             disabled={isSpinning}
             onClick={onDone}
-            className={`w-full h-16 font-black text-xl rounded-[2rem] transition-all uppercase tracking-widest ${
-              isSpinning 
-                ? 'bg-surface-dark text-slate-500 opacity-50 cursor-not-allowed' 
+            className={`w-full h-16 font-black text-xl rounded-[2rem] transition-all uppercase tracking-widest ${isSpinning
+                ? 'bg-surface-dark text-slate-500 opacity-50 cursor-not-allowed'
                 : 'bg-primary hover:bg-blue-400 text-background-dark shadow-[0_15px_30px_rgba(59,130,246,0.3)] active:scale-95'
-            }`}
+              }`}
           >
             {isSpinning ? t('contributionSuccess.wait') : t('contributionSuccess.returnToMap')}
           </button>

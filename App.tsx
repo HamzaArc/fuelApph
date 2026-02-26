@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { AuthScreen } from './screens/AuthScreen';
 import { useAuth } from './contexts/AuthContext';
@@ -16,6 +16,8 @@ import { SearchScreen } from './screens/SearchScreen';
 import { AddStation } from './screens/AddStation';
 import { Station } from './types';
 import { useLanguage } from './i18n/LanguageContext';
+import { supabase } from './lib/supabase';
+import { submitPriceReport, addNewStation } from './services/stationService';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('map');
@@ -32,18 +34,71 @@ const App: React.FC = () => {
   const [isPioneerContribution, setIsPioneerContribution] = useState(false);
   const [pendingLocation, setPendingLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [lastContribution, setLastContribution] = useState<{ station: string, fuel: string, price: number } | null>(null);
+  const [earnedPoints, setEarnedPoints] = useState(0);
+  const [userName, setUserName] = useState('');
+  const [userLevel, setUserLevel] = useState(1);
+  const [stationRefreshKey, setStationRefreshKey] = useState(0);
 
   const { t } = useLanguage();
   const { user, isLoading } = useAuth();
 
+  // Fetch user profile data for service calls
+  useEffect(() => {
+    if (user) {
+      supabase.from('users').select('name, level').eq('id', user.id).single().then(({ data }) => {
+        if (data) {
+          setUserName(data.name || '');
+          setUserLevel(data.level || 1);
+        }
+      });
+    }
+  }, [user]);
+
   const handleReport = () => setIsScanning(true);
 
-  const finishContribution = (stationName: string, fuelType: string, price: number, pioneer: boolean = false) => {
+  const finishContribution = async (
+    stationName: string,
+    fuelType: string,
+    price: number,
+    pioneer: boolean = false,
+    stationId?: string
+  ) => {
     setIsScanning(false);
     setLastContribution({ station: stationName, fuel: fuelType, price });
     setIsPioneerContribution(pioneer);
+
+    if (user && stationId && !pioneer) {
+      // Submit price report to Supabase
+      const result = await submitPriceReport({
+        userId: user.id,
+        stationId,
+        fuelType,
+        price,
+        reportType: 'manual',
+        userName,
+        userLevel,
+      });
+      setEarnedPoints(result.pointsEarned);
+    } else if (user && pioneer && pendingLocation) {
+      // Add new station to Supabase
+      const result = await addNewStation({
+        userId: user.id,
+        userName,
+        userLevel,
+        brand: stationName.replace(' Station', ''),
+        location: pendingLocation,
+        dieselPrice: price,
+      });
+      setEarnedPoints(result.pointsEarned);
+    } else {
+      // Fallback if no user/station context
+      setEarnedPoints(pioneer ? 200 : 50);
+    }
+
     setShowSuccess(true);
     setViewMode('map');
+    // Trigger station list refresh
+    setStationRefreshKey(prev => prev + 1);
   };
 
   const handleSignOut = () => {
@@ -73,7 +128,7 @@ const App: React.FC = () => {
   if (isScanning) return (
     <ScanFlow
       onCancel={() => setIsScanning(false)}
-      onComplete={(price, type) => finishContribution(selectedStation?.name || t('app.unknown'), type, price, false)}
+      onComplete={(price, type) => finishContribution(selectedStation?.name || t('app.unknown'), type, price, false, selectedStation?.id)}
       onFallback={() => {
         setIsScanning(false);
         setLastViewBeforeReport('map');
@@ -87,6 +142,7 @@ const App: React.FC = () => {
       <ContributionSuccess
         summary={lastContribution}
         isPioneer={isPioneerContribution}
+        earnedPoints={earnedPoints}
         onDone={() => {
           setShowSuccess(false);
           setSelectedStation(null);
@@ -139,16 +195,16 @@ const App: React.FC = () => {
             <AddStation
               location={pendingLocation}
               onBack={() => setViewMode('map')}
-              onComplete={(brand, price) => finishContribution(`${brand} Station`, 'Diesel', price, true)}
+              onComplete={(brand, price) => finishContribution(`${brand} Station`, 'Diesel', price, true, undefined)}
             />
           )}
 
           {viewMode === 'manual_report' && selectedStation && (
-            <ManualReport station={selectedStation} onBack={() => setViewMode(lastViewBeforeReport)} onComplete={(p, t) => finishContribution(selectedStation.name, t, p, false)} />
+            <ManualReport station={selectedStation} onBack={() => setViewMode(lastViewBeforeReport)} onComplete={(p, t) => finishContribution(selectedStation.name, t, p, false, selectedStation.id)} />
           )}
 
           {viewMode === 'voice_report' && selectedStation && (
-            <VoiceReport station={selectedStation} onBack={() => setViewMode(lastViewBeforeReport)} onComplete={(p, t) => finishContribution(selectedStation.name, t, p, false)} />
+            <VoiceReport station={selectedStation} onBack={() => setViewMode(lastViewBeforeReport)} onComplete={(p, t) => finishContribution(selectedStation.name, t, p, false, selectedStation.id)} />
           )}
         </>
       )}

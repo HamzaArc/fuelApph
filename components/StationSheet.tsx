@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Station } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
+import { confirmPrice } from '../services/stationService';
 
 interface StationSheetProps {
   station: Station | null;
@@ -10,14 +12,15 @@ interface StationSheetProps {
   onVoiceReport: () => void;
 }
 
-export const StationSheet: React.FC<StationSheetProps> = ({ 
-  station, 
-  onClose, 
-  onReport, 
-  onManualReport, 
+export const StationSheet: React.FC<StationSheetProps> = ({
+  station,
+  onClose,
+  onReport,
+  onManualReport,
   onVoiceReport
 }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [oneTapSuccess, setOneTapSuccess] = useState(false);
   const [translateY, setTranslateY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -42,23 +45,31 @@ export const StationSheet: React.FC<StationSheetProps> = ({
 
   const handleTouchEnd = () => {
     setIsDragging(false);
-    if (translateY > 100) onClose(); 
-    setTranslateY(0); 
+    if (translateY > 100) onClose();
+    setTranslateY(0);
   };
 
   const openWaze = () => window.open(`waze://?ll=${station.location.lat},${station.location.lng}&navigate=yes`, '_blank');
   const openGoogleMaps = () => window.open(`http://googleusercontent.com/maps.google.com/dir/?api=1&destination=${station.location.lat},${station.location.lng}`, '_blank');
-  
-  const handleOneTap = () => {
+
+  const handleOneTap = async () => {
     setOneTapSuccess(true);
+    if (user && station) {
+      await confirmPrice(
+        station.id,
+        user.id,
+        'Diesel',
+        station.prices?.Diesel || 0
+      );
+    }
     setTimeout(() => setOneTapSuccess(false), 3000);
   };
 
   return (
     <div className="absolute inset-0 z-[1100] pointer-events-none flex flex-col justify-end">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto transition-opacity animate-fadeIn" onClick={onClose} />
-      
-      <div 
+
+      <div
         className="relative bg-surface-darker/98 backdrop-blur-2xl border-t border-white/10 rounded-t-[32px] w-full max-w-md mx-auto pointer-events-auto shadow-[0_-8px_30px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden max-h-[90vh]"
         style={{ transform: `translateY(${translateY}px)`, transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
       >
@@ -67,11 +78,11 @@ export const StationSheet: React.FC<StationSheetProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto no-scrollbar px-6 pb-8">
-          
+
           <div className="flex items-start justify-between mt-2 mb-6">
             <div className="flex gap-4">
               <div className={`w-14 h-14 rounded-xl flex items-center justify-center p-2 shadow-inner ${station.isGhost ? 'bg-surface-dark text-slate-500 border border-white/5' : 'bg-white text-slate-900'}`}>
-                <span className="font-bold text-lg uppercase">{station.brand.substring(0,2)}</span>
+                <span className="font-bold text-lg uppercase">{station.brand.substring(0, 2)}</span>
               </div>
               <div className="text-left">
                 <h1 className="text-2xl font-bold text-white tracking-tight leading-none mb-1">{station.name}</h1>
@@ -104,7 +115,7 @@ export const StationSheet: React.FC<StationSheetProps> = ({
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-surface-dark/60 border border-white/5 rounded-2xl p-4 relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-2 opacity-50">
-                      <span className="material-symbols-outlined text-white/20 text-4xl -rotate-12">local_gas_station</span>
+                    <span className="material-symbols-outlined text-white/20 text-4xl -rotate-12">local_gas_station</span>
                   </div>
                   <p className="text-gray-400 text-sm font-medium mb-1 text-left uppercase">{t('station.diesel')}</p>
                   <div className="flex items-baseline gap-1">
@@ -114,7 +125,7 @@ export const StationSheet: React.FC<StationSheetProps> = ({
                 </div>
                 <div className="bg-surface-dark/60 border border-white/5 rounded-2xl p-4 relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-2 opacity-50">
-                      <span className="material-symbols-outlined text-white/20 text-4xl -rotate-12">local_gas_station</span>
+                    <span className="material-symbols-outlined text-white/20 text-4xl -rotate-12">local_gas_station</span>
                   </div>
                   <p className="text-gray-400 text-sm font-medium mb-1 text-left uppercase">{t('station.sansPlomb')}</p>
                   <div className="flex items-baseline gap-1">

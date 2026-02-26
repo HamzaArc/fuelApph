@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Station } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
+import { confirmPrice } from '../services/stationService';
 
 interface StationDetailsProps {
   station: Station;
@@ -12,6 +14,7 @@ interface StationDetailsProps {
 
 export const StationDetails: React.FC<StationDetailsProps> = ({ station, onBack, onReport, onManualReport, onVoiceReport }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [showRating, setShowRating] = useState(false);
   const [oneTapSuccess, setOneTapSuccess] = useState(false);
 
@@ -19,8 +22,16 @@ export const StationDetails: React.FC<StationDetailsProps> = ({ station, onBack,
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${station.location.lat},${station.location.lng}`, '_blank');
   };
 
-  const handleOneTap = () => {
+  const handleOneTap = async () => {
     setOneTapSuccess(true);
+    if (user && station) {
+      await confirmPrice(
+        station.id,
+        user.id,
+        'Diesel',
+        station.prices?.Diesel || 0
+      );
+    }
     setTimeout(() => setOneTapSuccess(false), 3000);
   };
 
@@ -40,7 +51,7 @@ export const StationDetails: React.FC<StationDetailsProps> = ({ station, onBack,
       <div className="absolute inset-0 z-0 w-full h-full">
         <div className="w-full h-full bg-cover bg-center opacity-60 grayscale" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCJLgQ9wEwiHsM99SSiFEXSia0Hldr_5vgU5gabEzxFBW8m8n6pGGj_VCXmwiTGKym51jNo9XknsvEtwRRl3zGJiTKB2JWR8WC1cH7nQJJL88atogIvMebAi6GHDbYOk_WRIV6Gjhw8aSvm09D6jyc7V1Hhb7fX218UhfVep3xrumlslJaB6RT4BGoZyW16yPWNyvpmo28zbOSjrw7X_wqWZ3sBhT8FM7mvCgzd-MCfZ_OZhYQ6oRnbSfNpTV7Wdtj6t3zqEk5MPouH')" }}></div>
         <div className="absolute inset-0 bg-gradient-to-b from-background-dark/30 via-transparent to-background-dark/90"></div>
-        
+
         <div className="absolute top-14 left-4 right-4 flex justify-between items-start z-20">
           <button onClick={onBack} className="bg-surface-dark/90 backdrop-blur-md p-3 rounded-full text-white shadow-lg border border-white/10">
             <span className="material-symbols-outlined text-[24px]">arrow_back</span>
@@ -49,7 +60,7 @@ export const StationDetails: React.FC<StationDetailsProps> = ({ station, onBack,
 
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
           <div className="bg-primary text-background-dark px-3 py-1 rounded-full text-xs font-bold mb-1 shadow-lg shadow-primary/20 whitespace-nowrap">
-              {station.prices.Diesel} DH
+            {station.prices.Diesel} DH
           </div>
           <span className="material-symbols-outlined text-primary text-5xl drop-shadow-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
         </div>
@@ -67,7 +78,7 @@ export const StationDetails: React.FC<StationDetailsProps> = ({ station, onBack,
                 <div className="flex items-start justify-between mt-4 mb-6">
                   <div className="flex gap-4">
                     <div className="w-14 h-14 rounded-xl bg-white flex items-center justify-center p-2 shadow-inner">
-                      <span className="text-slate-900 font-bold text-lg uppercase">{station.brand.substring(0,2)}</span>
+                      <span className="text-slate-900 font-bold text-lg uppercase">{station.brand.substring(0, 2)}</span>
                     </div>
                     <div className="text-left">
                       <h1 className="text-2xl font-bold text-white tracking-tight leading-none mb-1">{station.name}</h1>
@@ -91,7 +102,7 @@ export const StationDetails: React.FC<StationDetailsProps> = ({ station, onBack,
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   <div className="bg-white/5 border border-white/5 rounded-2xl p-4 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-2 opacity-50">
-                        <span className="material-symbols-outlined text-white/20 text-4xl -rotate-12">local_gas_station</span>
+                      <span className="material-symbols-outlined text-white/20 text-4xl -rotate-12">local_gas_station</span>
                     </div>
                     <p className="text-gray-400 text-sm font-medium mb-1 text-left uppercase">{t('station.diesel')}</p>
                     <div className="flex items-baseline gap-1">
@@ -101,7 +112,7 @@ export const StationDetails: React.FC<StationDetailsProps> = ({ station, onBack,
                   </div>
                   <div className="bg-white/5 border border-white/5 rounded-2xl p-4 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-2 opacity-50">
-                        <span className="material-symbols-outlined text-white/20 text-4xl -rotate-12">local_gas_station</span>
+                      <span className="material-symbols-outlined text-white/20 text-4xl -rotate-12">local_gas_station</span>
                     </div>
                     <p className="text-gray-400 text-sm font-medium mb-1 text-left uppercase">{t('station.sansPlomb')}</p>
                     <div className="flex items-baseline gap-1">
@@ -182,8 +193,8 @@ export const StationDetails: React.FC<StationDetailsProps> = ({ station, onBack,
               </>
             ) : (
               <div className="animate-fadeIn py-4 text-center">
-                 <h2 className="text-white font-black text-xl mb-4">{t('station.ratingStation')}</h2>
-                 <button onClick={() => setShowRating(false)} className="text-primary font-bold">{t('station.close')}</button>
+                <h2 className="text-white font-black text-xl mb-4">{t('station.ratingStation')}</h2>
+                <button onClick={() => setShowRating(false)} className="text-primary font-bold">{t('station.close')}</button>
               </div>
             )}
           </div>
