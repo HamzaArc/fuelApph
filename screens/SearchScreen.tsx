@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
+import { supabase } from '../lib/supabase';
 
 interface SearchScreenProps {
   onBack: () => void;
@@ -28,11 +29,39 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilte
     { id: 'EV Charge', label: t('amenities.EV Charge'), icon: 'ev_charger' },
   ];
 
-  const cities = [
-    { name: 'Casablanca', stations: 142, img: 'https://picsum.photos/seed/casa/400/300' },
-    { name: 'Rabat', stations: 89, img: 'https://picsum.photos/seed/rabat/400/300' },
-    { name: 'Marrakech', stations: 115, img: 'https://picsum.photos/seed/marrakech/800/400' },
-  ];
+  const [popularCities, setPopularCities] = useState([
+    { name: 'Casablanca', stations: 0, img: 'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?auto=format&fit=crop&q=80&w=400&h=300' },
+    { name: 'Rabat', stations: 0, img: 'https://images.unsplash.com/photo-1643209228834-807de86fe345?auto=format&fit=crop&q=80&w=400&h=300' },
+    { name: 'Marrakech', stations: 0, img: 'https://images.unsplash.com/photo-1597825310705-776fd308cbb3?auto=format&fit=crop&q=80&w=800&h=400' },
+  ]);
+
+  const [recentSearches, setRecentSearches] = useState<{ name: string, meta: string }[]>([]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const { data } = await supabase.from('stations').select('name, location, brand');
+      if (data) {
+        const casaCount = data.filter(s => s.location?.city === 'Casablanca').length;
+        const rabatCount = data.filter(s => s.location?.city === 'Rabat').length;
+        const kechCount = data.filter(s => s.location?.city === 'Marrakech').length;
+
+        setPopularCities(prev => prev.map(c => {
+          if (c.name === 'Casablanca') return { ...c, stations: casaCount };
+          if (c.name === 'Rabat') return { ...c, stations: rabatCount };
+          if (c.name === 'Marrakech') return { ...c, stations: kechCount };
+          return c;
+        }));
+
+        if (data.length >= 2) {
+          setRecentSearches(data.slice(0, 3).map(s => ({
+            name: s.name,
+            meta: `${s.location?.city || 'Maroc'} • ${s.brand || 'Station'}`
+          })));
+        }
+      }
+    };
+    fetchStats();
+  }, []);
 
   const toggleBrand = (id: string) => {
     setSelectedBrands(prev =>
@@ -112,10 +141,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilte
             <button className="text-primary text-xs font-bold active:opacity-50 transition-opacity" onClick={() => { setSearchQuery(''); setSelectedBrands([]); setSelectedAmenities([]); }}>{t('search.clear')}</button>
           </div>
           <div className="space-y-3">
-            {[
-              { name: 'Station Shell - Maarif', meta: `Casablanca • 2.4 km ${t('search.away')}` },
-              { name: 'TotalEnergies Agdal', meta: `Rabat • 12 km ${t('search.away')}` },
-            ].map((s, i) => (
+            {recentSearches.map((s, i) => (
               <div
                 key={i}
                 className="flex items-center justify-between bg-surface-dark/40 p-4 rounded-2xl border border-white/5 active:scale-[0.98] transition-all cursor-pointer hover:bg-surface-dark/60"
@@ -139,7 +165,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilte
         <div className="mb-10">
           <h2 className="text-white font-black text-lg mb-4">{t('search.popularCities')}</h2>
           <div className="grid grid-cols-2 gap-4 mb-4">
-            {cities.slice(0, 2).map((city) => (
+            {popularCities.slice(0, 2).map((city) => (
               <div
                 key={city.name}
                 className="relative h-32 rounded-3xl overflow-hidden group cursor-pointer active:scale-95 transition-all"
@@ -159,15 +185,15 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onBack, onApplyFilte
           </div>
           <div
             className="relative h-32 rounded-3xl overflow-hidden group cursor-pointer active:scale-95 transition-all"
-            onClick={() => onApplyFilters({ query: cities[2].name, selectedFuel, selectedBrands: [], selectedAmenities: [] })}
+            onClick={() => onApplyFilters({ query: popularCities[2].name, selectedFuel, selectedBrands: [], selectedAmenities: [] })}
           >
-            <img src={cities[2].img} alt={cities[2].name} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-110" referrerPolicy="no-referrer" />
+            <img src={popularCities[2].img} alt={popularCities[2].name} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-110" referrerPolicy="no-referrer" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute bottom-4 left-4">
-              <p className="text-white font-black text-xl leading-none">{cities[2].name}</p>
+              <p className="text-white font-black text-xl leading-none">{popularCities[2].name}</p>
               <p className="text-primary text-[10px] font-black uppercase tracking-widest mt-1 flex items-center gap-1">
                 <span className="material-symbols-outlined text-[12px]">local_gas_station</span>
-                {cities[2].stations} {t('search.stations')}
+                {popularCities[2].stations} {t('search.stations')}
               </p>
             </div>
           </div>

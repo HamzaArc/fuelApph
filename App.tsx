@@ -174,6 +174,7 @@ const App: React.FC = () => {
 
   const selectStation = (s: Station) => {
     setSelectedStation(s);
+    setActiveTab('map');
     setViewMode('map');
   };
 
@@ -228,6 +229,7 @@ const App: React.FC = () => {
           {viewMode === 'map' && (
             <>
               <MapExplorer
+                selectedStation={selectedStation}
                 hideBottomCard={!!selectedStation}
                 refreshKey={stationRefreshKey}
                 userLocation={userLocation}

@@ -21,7 +21,8 @@ export const NearbyList: React.FC<NearbyListProps> = ({
   title,
   initialSearch = "Agdal, Rabat",
   searchPlaceholder,
-  searchFilters
+  searchFilters,
+  userLocation
 }) => {
   const { t } = useLanguage();
 
@@ -31,7 +32,6 @@ export const NearbyList: React.FC<NearbyListProps> = ({
   const sortOptions = [
     { id: 'cheapest', label: t('nearby.cheapest') },
     { id: 'nearest', label: t('nearby.nearest') },
-    { id: 'diesel', label: t('station.diesel') },
     { id: 'verified', label: t('nearby.verified') }
   ];
 
@@ -69,6 +69,13 @@ export const NearbyList: React.FC<NearbyListProps> = ({
             s.location.city.toLowerCase().includes(q) ||
             s.location.address.toLowerCase().includes(q)
           );
+        }
+
+        if (userLocation) {
+          filteredData = filteredData.map((s: any) => ({
+            ...s,
+            calculatedDistance: calculateDistance(userLocation.lat, userLocation.lng, s.location.lat, s.location.lng)
+          }));
         }
 
         setStations(filteredData as Station[]);
