@@ -11,8 +11,8 @@ export async function fetchStationsInBounds(bounds: {
   // SAFEGUARD: Prevent fetching if the area is too huge to avoid Overpass timeout
   const latDiff = Math.abs(bounds.north - bounds.south);
   const lngDiff = Math.abs(bounds.east - bounds.west);
-  
-  if (latDiff > 0.8 || lngDiff > 0.8) {
+
+  if (latDiff > 0.3 || lngDiff > 0.3) {
     return []; // Map is zoomed out too far. Return empty, let user zoom in.
   }
 
@@ -40,7 +40,7 @@ export async function fetchStationsInBounds(bounds: {
     });
 
     if (!response.ok) {
-        throw new Error(`Overpass API error: ${response.status}`);
+      throw new Error(`Overpass API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -50,7 +50,7 @@ export async function fetchStationsInBounds(bounds: {
     const ghostStations: Station[] = data.elements.map((node: any) => {
       const tags = node.tags || {};
       const rawName = tags.name || tags.operator || tags.brand || 'Unknown Station';
-      
+
       let brand: Station['brand'] = 'Other';
       const searchName = rawName.toLowerCase();
       if (searchName.includes('shell')) brand = 'Shell';
@@ -64,20 +64,20 @@ export async function fetchStationsInBounds(bounds: {
         id: `osm-${node.id}`,
         name: rawName === 'Unknown Station' ? `${brand} Station` : rawName,
         brand: brand,
-        location: { 
-          lat: node.lat, 
-          lng: node.lon, 
-          address: tags['addr:street'] || tags['addr:full'] || 'Address unknown', 
-          city: tags['addr:city'] || 'Morocco' 
+        location: {
+          lat: node.lat,
+          lng: node.lon,
+          address: tags['addr:street'] || tags['addr:full'] || 'Address unknown',
+          city: tags['addr:city'] || 'Morocco'
         },
-        prices: {}, 
+        prices: {},
         lastUpdated: 'Needs Verification',
         lastUpdatedTimestamp: 0,
         distance: 'Nearby',
         amenities: [],
         status: 'Open',
         trustScore: 0,
-        isGhost: true 
+        isGhost: true
       };
     });
 

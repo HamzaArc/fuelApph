@@ -363,7 +363,7 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
                     <span className="flex items-center gap-2"><span className="material-symbols-outlined text-primary text-[18px]">timer</span> 4 {t('map.mins')}</span>
                     <span className="flex items-center gap-2">
                       <span className={`material-symbols-outlined text-[18px] ${Date.now() - cheapestNearby.lastUpdatedTimestamp > 86400000 ? 'text-slate-500' : 'text-primary'}`}>verified</span>
-                      {cheapestNearby.lastUpdated.toUpperCase()}
+                      {cheapestNearby.lastUpdated?.toUpperCase() || ''}
                     </span>
                   </div>
                   <div className="flex gap-3">

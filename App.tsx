@@ -68,26 +68,41 @@ const App: React.FC = () => {
     setIsPioneerContribution(pioneer);
 
     if (user && stationId && !pioneer) {
-      // Submit price report to Supabase
-      const result = await submitPriceReport({
-        userId: user.id,
-        stationId,
-        fuelType,
-        price,
-        reportType: 'manual',
-        userName,
-        userLevel,
-      });
-      setEarnedPoints(result.pointsEarned);
+      if (stationId.startsWith('osm-') && selectedStation) {
+        // Migrating ghost station from OSM to Supabase
+        const result = await addNewStation({
+          userId: user.id,
+          userName,
+          userLevel,
+          brand: selectedStation.brand,
+          location: selectedStation.location,
+          fuelType,
+          price,
+        });
+        setEarnedPoints(result.pointsEarned);
+      } else {
+        // Submit price report to existing Supabase station
+        const result = await submitPriceReport({
+          userId: user.id,
+          stationId,
+          fuelType,
+          price,
+          reportType: 'manual',
+          userName,
+          userLevel,
+        });
+        setEarnedPoints(result.pointsEarned);
+      }
     } else if (user && pioneer && pendingLocation) {
-      // Add new station to Supabase
+      // Add brand new station to Supabase
       const result = await addNewStation({
         userId: user.id,
         userName,
         userLevel,
         brand: stationName.replace(' Station', ''),
         location: pendingLocation,
-        dieselPrice: price,
+        fuelType,
+        price,
       });
       setEarnedPoints(result.pointsEarned);
     } else {

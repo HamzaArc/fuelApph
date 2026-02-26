@@ -30,7 +30,8 @@ export interface AddStationParams {
     userLevel: number;
     brand: string;
     location: { lat: number; lng: number };
-    dieselPrice: number;
+    fuelType: string;
+    price: number;
 }
 
 export interface SubmitResult {
@@ -75,7 +76,7 @@ export async function submitPriceReport(params: SubmitPriceParams): Promise<Subm
                     prices: updatedPrices,
                     last_updated: new Date().toISOString(),
                     last_updated_timestamp: Date.now(),
-                    verified_by: userName || userId,
+                    verified_by: userId,
                     verified_by_level: userLevel || 1,
                     is_ghost: false,
                 })
@@ -136,7 +137,7 @@ export async function confirmPrice(
  * Add a brand new station and submit its first price (Pioneer reward).
  */
 export async function addNewStation(params: AddStationParams): Promise<SubmitResult> {
-    const { userId, userName, userLevel, brand, location, dieselPrice } = params;
+    const { userId, userName, userLevel, brand, location, fuelType, price } = params;
 
     try {
         // 1. Insert the new station
@@ -151,10 +152,10 @@ export async function addNewStation(params: AddStationParams): Promise<SubmitRes
                     address: 'User Added',
                     city: 'Morocco',
                 },
-                prices: { Diesel: dieselPrice },
+                prices: { [fuelType]: price },
                 last_updated: new Date().toISOString(),
                 last_updated_timestamp: Date.now(),
-                verified_by: userName || userId,
+                verified_by: userId,
                 verified_by_level: userLevel || 1,
                 distance: 'Nearby',
                 amenities: [],
@@ -174,8 +175,8 @@ export async function addNewStation(params: AddStationParams): Promise<SubmitRes
         const result = await submitPriceReport({
             userId,
             stationId: newStation.id,
-            fuelType: 'Diesel',
-            price: dieselPrice,
+            fuelType: fuelType,
+            price: price,
             reportType: 'pioneer',
             userName,
             userLevel,
