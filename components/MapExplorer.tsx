@@ -84,18 +84,6 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
     }
   }, [selectedStation]);
 
-  // Fetch stations from Supabase on mount
-  useEffect(() => {
-    const fetchSupabaseStations = async () => {
-      const { data, error } = await supabase.from('stations').select('*');
-      if (!error && data) {
-        setDbStations(data);
-      }
-    };
-    fetchSupabaseStations();
-
-  }, [refreshKey]);
-
   const fuelTypes: { id: FuelType; label: string }[] = [
     { id: 'Diesel', label: t('station.diesel') },
     { id: 'Sans Plomb', label: t('station.sansPlomb') },
@@ -107,29 +95,112 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
     setMapCenter(center);
   }, []);
 
-  const handleSearch = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && searchQuery.trim()) {
-      setIsLoadingArea(true);
-      try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery + ', Morocco')}&limit=1`);
-        const data = await response.json();
+  const [searchResults, setSearchResults] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-        if (data && data.length > 0) {
-          const newCenter = new L.LatLng(parseFloat(data[0].lat), parseFloat(data[0].lon));
-          setTargetCenter(newCenter);
-        } else {
-          alert(t('map.locationNotFound'));
+  const fetchPredictions = useCallback(
+    L.Util.throttle(async (input: string) => {
+      if (!input.trim() || !window.google || !window.google.maps || !window.google.maps.places) return;
+
+      try {
+        const places = google.maps.places as any;
+
+        // Use the recommended modern AutocompleteSuggestion API if available
+        if (places.AutocompleteSuggestion) {
+          const { suggestions } = await places.AutocompleteSuggestion.fetchAutocompletePredictions({
+            input,
+            includedRegionCodes: ['ma'],
+            language: 'fr'
+          });
+
+          if (suggestions) {
+            setSearchResults(suggestions.map((s: any) => ({
+              place_id: s.placePrediction.placeId,
+              description: s.placePrediction.text.text,
+              structured_formatting: {
+                main_text: s.placePrediction.text.text.split(',')[0],
+                secondary_text: s.placePrediction.text.text.split(',').slice(1).join(',').trim()
+              }
+            })));
+            return;
+          }
         }
+
+        // Fallback to the legacy AutocompleteService (still valid for many keys)
+        const service = new google.maps.places.AutocompleteService();
+        service.getPlacePredictions(
+          {
+            input,
+            componentRestrictions: { country: 'ma' },
+            types: ['geocode', 'establishment']
+          },
+          (predictions, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+              setSearchResults(predictions);
+            } else {
+              setSearchResults([]);
+            }
+          }
+        );
       } catch (err) {
-        console.error('Search failed:', err);
-      } finally {
-        setIsLoadingArea(false);
+        console.error("Autocomplete error:", err);
+        setSearchResults([]);
       }
+    }, 300),
+    []
+  );
+
+  useEffect(() => {
+    if (searchQuery.length > 2) {
+      fetchPredictions(searchQuery);
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchQuery, fetchPredictions]);
+
+  const handlePlaceSelect = async (placeId: string) => {
+    setIsLoadingArea(true);
+    setSearchResults([]);
+    setIsSearchFocused(false);
+
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ placeId }, (results, status) => {
+      if (status === 'OK' && results?.[0]) {
+        const { lat, lng } = results[0].geometry.location;
+        const newCenter = new L.LatLng(lat(), lng());
+        setTargetCenter(newCenter);
+        setTargetZoom(15);
+        setSearchQuery(results[0].formatted_address);
+      }
+      setIsLoadingArea(false);
+    });
+  };
+
+  const MapEventsHandler = () => {
+    useMapEvents({
+      click: () => {
+        setIsSearchFocused(false);
+        setSearchResults([]);
+      },
+      movestart: () => {
+        if (isSearchFocused) {
+          setIsSearchFocused(false);
+          setSearchResults([]);
+        }
+      }
+    });
+    return null;
+  };
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchResults.length > 0) {
+      handlePlaceSelect(searchResults[0].place_id);
     }
   };
 
   const boundsKey = mapBounds ? `${mapBounds.getSouth().toFixed(4)},${mapBounds.getWest().toFixed(4)},${mapBounds.getNorth().toFixed(4)},${mapBounds.getEast().toFixed(4)}` : null;
 
+  // Fetch stations from Supabase and OSM based on map bounds
   useEffect(() => {
     const loadArea = async () => {
       if (!mapBounds) return;
@@ -142,13 +213,32 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
         east: mapBounds.getEast(),
       };
 
-      const importedStations = await fetchStationsInBounds(boundsData);
+      try {
+        // 1. Fetch Verified Stations from Supabase using spatial RPC
+        const { data: supabaseStations, error: rpcError } = await supabase.rpc('get_stations_in_bounds', {
+          min_lat: boundsData.south,
+          max_lat: boundsData.north,
+          min_lng: boundsData.west,
+          max_lng: boundsData.east
+        });
 
-      const mockIds = new Set(dbStations.map(s => s.id));
-      const newStations = importedStations.filter(s => !mockIds.has(s.id));
+        if (!rpcError && supabaseStations) {
+          setDbStations(supabaseStations as Station[]);
+        }
 
-      setDynamicStations(newStations);
-      setIsLoadingArea(false);
+        // 2. Fetch "Ghost" Stations from OSM
+        const importedStations = await fetchStationsInBounds(boundsData);
+
+        // Filter out OSM stations that are already in our DB
+        const dbIds = new Set((supabaseStations || []).map((s: any) => s.id));
+        const newStations = importedStations.filter(s => !dbIds.has(s.id));
+
+        setDynamicStations(newStations);
+      } catch (err) {
+        console.error('Error loading area stations:', err);
+      } finally {
+        setIsLoadingArea(false);
+      }
     };
 
     const debounceTimer = setTimeout(loadArea, 700);
@@ -257,10 +347,35 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearch}
+                  onFocus={() => setIsSearchFocused(true)}
                   placeholder={isRouteMode ? t('map.startLocation') : t('map.searchPlaceholder')}
                   disabled={isRouteMode}
                   className="bg-transparent border-none outline-none flex-1 text-xs font-bold text-white placeholder:text-slate-500 focus:ring-0 truncate disabled:opacity-50"
                 />
+
+                {/* Google Places Results Dropdown */}
+                {isSearchFocused && searchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-surface-darker/95 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden animate-slide-up z-[2000] pointer-events-auto">
+                    {searchResults.map((res, i) => (
+                      <button
+                        key={res.place_id}
+                        onClick={() => handlePlaceSelect(res.place_id)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors active:bg-primary/20 ${i !== searchResults.length - 1 ? 'border-b border-white/5' : ''}`}
+                      >
+                        <div className="size-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-400">
+                          <span className="material-symbols-outlined text-lg">location_on</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-bold text-white truncate">{res.structured_formatting.main_text}</p>
+                          <p className="text-[9px] text-slate-500 truncate">{res.structured_formatting.secondary_text}</p>
+                        </div>
+                      </button>
+                    ))}
+                    <div className="px-4 py-2 bg-black/20 flex justify-end">
+                      <img src="https://developers.google.com/static/maps/images/google_on_white.png" alt="Powered by Google" className="h-2 opacity-50 inverse" />
+                    </div>
+                  </div>
+                )}
 
                 {isLoadingArea && (
                   <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -316,8 +431,12 @@ export const MapExplorer: React.FC<MapExplorerProps> = ({ onStationSelect, hideB
 
       <div className="absolute inset-0 z-0">
         <MapContainer center={[33.5890, -7.6310]} zoom={14} zoomControl={false} className="h-full w-full">
-          <TileLayer attribution='&copy; CARTO' url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
           <MapController targetCenter={targetCenter} targetZoom={targetZoom} />
+          <MapEventsHandler />
 
           <BoundsTracker onBoundsChange={handleBoundsChange} />
 

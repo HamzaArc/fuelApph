@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export const AuthScreen: React.FC = () => {
+    const { t } = useLanguage();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLogin, setIsLogin] = useState(true);
@@ -28,7 +30,7 @@ export const AuthScreen: React.FC = () => {
                 if (error) throw error;
             }
         } catch (err: any) {
-            setError(err.message || 'Authentication failed');
+            setError(err.message || t('auth.failed'));
         } finally {
             setLoading(false);
         }
@@ -42,7 +44,7 @@ export const AuthScreen: React.FC = () => {
                         <span className="material-symbols-outlined text-3xl">local_gas_station</span>
                     </div>
                     <h1 className="text-2xl font-black">FuelSpy Morocco</h1>
-                    <p className="text-slate-400 mt-2">{isLogin ? 'Welcome back' : 'Create an account'}</p>
+                    <p className="text-slate-400 mt-2">{isLogin ? t('auth.welcome') : t('auth.create')}</p>
                 </div>
 
                 {error && (
@@ -53,7 +55,7 @@ export const AuthScreen: React.FC = () => {
 
                 <form onSubmit={handleAuth} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-1">Email</label>
+                        <label className="block text-sm font-medium text-slate-400 mb-1">{t('auth.email')}</label>
                         <input
                             type="email"
                             value={email}
@@ -64,7 +66,7 @@ export const AuthScreen: React.FC = () => {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-1">Password</label>
+                        <label className="block text-sm font-medium text-slate-400 mb-1">{t('auth.password')}</label>
                         <input
                             type="password"
                             value={password}
@@ -81,7 +83,7 @@ export const AuthScreen: React.FC = () => {
                         disabled={loading}
                         className="w-full bg-primary text-background-dark font-bold py-3 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
                     >
-                        {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Sign Up')}
+                        {loading ? t('auth.processing') : (isLogin ? t('auth.signIn') : t('auth.signUp'))}
                     </button>
                 </form>
 
@@ -90,7 +92,7 @@ export const AuthScreen: React.FC = () => {
                         onClick={() => setIsLogin(!isLogin)}
                         className="text-sm text-slate-400 hover:text-white transition-colors"
                     >
-                        {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+                        {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}
                     </button>
                 </div>
             </div>

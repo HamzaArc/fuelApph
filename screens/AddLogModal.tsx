@@ -52,7 +52,7 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({ onClose, onSuccess }) 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">
-                            Station Name
+                            {t('vehicleLog.stationName')}
                         </label>
                         <input
                             type="text"
@@ -67,7 +67,7 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({ onClose, onSuccess }) 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">
-                                Cost (DH)
+                                {t('vehicleLog.cost')}
                             </label>
                             <input
                                 type="number"
@@ -81,7 +81,7 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({ onClose, onSuccess }) 
                         </div>
                         <div>
                             <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">
-                                Volume (L)
+                                {t('vehicleLog.volume')}
                             </label>
                             <input
                                 type="number"
@@ -97,7 +97,7 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({ onClose, onSuccess }) 
 
                     <div>
                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">
-                            Odometer (km)
+                            {t('vehicleLog.odometer')}
                         </label>
                         <input
                             type="number"
@@ -115,14 +115,14 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({ onClose, onSuccess }) 
                             onClick={onClose}
                             className="flex-1 py-4 bg-white/5 rounded-2xl font-black text-slate-300 uppercase tracking-widest hover:bg-white/10 transition-colors"
                         >
-                            Cancel
+                            {t('vehicleLog.cancel')}
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
                             className="flex-1 py-4 bg-primary text-background-dark rounded-2xl font-black uppercase tracking-widest shadow-[0_10px_20px_rgba(59,130,246,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                         >
-                            {loading ? 'Saving...' : 'Save Log'}
+                            {loading ? t('vehicleLog.saving') : t('vehicleLog.saveLog')}
                         </button>
                     </div>
                 </form>

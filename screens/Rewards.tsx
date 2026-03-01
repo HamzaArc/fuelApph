@@ -16,6 +16,7 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
 
   const [points, setPoints] = useState(0);
   const [userSavings, setUserSavings] = useState(0);
+  const [monthlySavings, setMonthlySavings] = useState(0);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [walletTab, setWalletTab] = useState<'active' | 'history'>('active');
@@ -29,12 +30,13 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
         // Fetch user points and savings
         const { data: userData } = await supabase
           .from('users')
-          .select('total_points, savings')
+          .select('total_points, savings, monthly_savings')
           .eq('id', user.id)
           .single();
         if (userData) {
           setPoints(userData.total_points || 0);
           setUserSavings(userData.savings || 0);
+          setMonthlySavings(userData.monthly_savings || 0);
         }
 
         // Fetch user vouchers
@@ -74,11 +76,6 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
 
     setConfirmModal({ isOpen: false, item: null });
 
-    if (points < item.points) {
-      showAlert(t('app.error'), t('rewards.notEnoughPoints'), 'error');
-      return;
-    }
-
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -87,40 +84,26 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
     // Generate a pseudo-random code
     const vCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-    // Calculate new points
-    const newPoints = points - item.points;
+    try {
+      const { data, error: rpcError } = await supabase.rpc('redeem_points_rpc', {
+        p_user_id: user.id,
+        p_brand: item.brand,
+        p_value: item.title,
+        p_type: 'Service',
+        p_points_required: item.points,
+        p_code: vCode
+      });
 
-    // 1. Deduct points
-    const { error: userError } = await supabase
-      .from('users')
-      .update({ total_points: newPoints })
-      .eq('id', user.id);
+      if (rpcError || !data?.success) {
+        console.error('Redeem RPC Error:', rpcError || data?.error);
+        showAlert(t('app.error'), data?.error || t('app.error'), 'error');
+        setLoading(false);
+        return;
+      }
 
-    if (userError) {
-      showAlert(t('app.error'), t('app.error'), 'error');
-      setLoading(false);
-      return;
-    }
+      const newVoucher = data.voucher;
+      const newPoints = points - item.points;
 
-    // 2. Insert voucher
-    const expiry = new Date();
-    expiry.setMonth(expiry.getMonth() + 1); // 1 month validity
-
-    const { data: newVoucher, error: voucherError } = await supabase
-      .from('vouchers')
-      .insert({
-        user_id: user.id,
-        brand: item.brand,
-        value: item.title,
-        type: 'Service',
-        points_required: item.points,
-        code: vCode,
-        expiry_date: expiry.toISOString()
-      })
-      .select()
-      .single();
-
-    if (!voucherError && newVoucher) {
       setPoints(newPoints);
       setVouchers([{
         id: newVoucher.id,
@@ -130,10 +113,15 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
         expiryDate: newVoucher.expiry_date,
         status: newVoucher.status || 'active'
       }, ...vouchers]);
+
       showAlert(t('app.success'), t('rewards.redeemSuccess'), 'success');
       setActiveView('wallet');
+    } catch (err) {
+      console.error('Redeem failed:', err);
+      showAlert(t('app.error'), t('app.error'), 'error');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const categories = [
@@ -367,7 +355,7 @@ export const Rewards: React.FC<RewardsProps> = ({ showAlert }) => {
               </div>
               <div className="mt-4 flex items-center gap-2 text-[10px] text-slate-400 font-bold">
                 <span className="material-symbols-outlined text-primary text-sm">trending_up</span>
-                <span>{t('rewards.savedThisMonth')}</span> // Kept as static for now based on UI mockup
+                <span>{t('rewards.savedThisMonth').replace('{value}', monthlySavings.toLocaleString())}</span>
               </div>
             </div>
 

@@ -31,13 +31,19 @@ export async function fetchStationsInBounds(bounds: {
   `;
 
   try {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
     const response = await fetch('https://overpass-api.de/api/interpreter', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: `data=${encodeURIComponent(query)}`,
+      signal: controller.signal
     });
+
+    clearTimeout(id);
 
     if (!response.ok) {
       throw new Error(`Overpass API error: ${response.status}`);

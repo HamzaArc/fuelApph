@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
+import { extractFuelPriceFromImage } from '../services/geminiService';
 
 interface ScanFlowProps {
   onComplete: (price: number, type: string) => void;
@@ -37,24 +38,35 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel, onFall
   };
 
   const handleCapture = async () => {
-    setStep('processing');
-    
-    // Strict 4-second OCR Timeout Fallback
-    const fallbackTimer = setTimeout(() => {
-      stopCamera();
-      onFallback();
-    }, 4000);
+    if (!videoRef.current || videoRef.current.readyState < 2) return;
 
-    // Simulated OCR Processing Time (Randomized for realism)
-    const ocrProcessingTime = Math.random() > 0.4 ? 2000 : 5000;
-    
-    setTimeout(() => {
-      if (ocrProcessingTime <= 4000) {
-        clearTimeout(fallbackTimer);
-        setExtractedData({ price: 13.45, fuelType: 'Diesel' });
-        setStep('verify');
+    setStep('processing');
+
+    // Capture frame on canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(videoRef.current, 0, 0);
+      const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+
+      try {
+        const result = await extractFuelPriceFromImage(base64Image);
+        stopCamera();
+        if (result && result.price) {
+          setExtractedData(result);
+          setStep('verify');
+        } else {
+          onFallback();
+        }
+      } catch (err) {
+        console.error("Processing error:", err);
+        onFallback();
       }
-    }, ocrProcessingTime);
+    } else {
+      onFallback();
+    }
   };
 
   const adjustPrice = (amount: number) => {
@@ -71,7 +83,7 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel, onFall
       {step === 'camera' && (
         <div className="relative flex-1">
           <video ref={videoRef} autoPlay playsInline className="h-full w-full object-cover" />
-          
+
           <div className="absolute inset-0 flex flex-col p-6 pointer-events-none">
             <div className="flex justify-between items-center pointer-events-auto">
               <button onClick={onCancel} className="size-10 bg-black/40 rounded-full flex items-center justify-center text-white">
@@ -93,7 +105,7 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel, onFall
 
             <div className="flex flex-col items-center gap-8 pointer-events-auto">
               <p className="text-white/60 text-sm text-center">{t('scanFlow.aiDetect')}</p>
-              <button 
+              <button
                 onClick={handleCapture}
                 className="size-20 rounded-full border-4 border-white flex items-center justify-center p-1 mb-8"
               >
@@ -122,15 +134,15 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel, onFall
         <div className="flex-1 flex flex-col bg-background-dark p-6 pt-12">
           <h2 className="text-3xl font-extrabold text-white mb-2 text-center">{t('scanFlow.verifyDetails')}</h2>
           <p className="text-slate-400 text-center mb-8">{t('scanFlow.confirmInfo')}</p>
-          
+
           <div className="bg-surface-dark rounded-2xl p-6 border border-primary/20 space-y-6 shadow-xl mb-auto">
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">{t('scanFlow.detectedFuel')}</label>
               <div className="flex gap-2">
                 {['Diesel', 'Sans Plomb', 'Premium'].map(type => (
-                  <button 
+                  <button
                     key={type}
-                    onClick={() => setExtractedData({...extractedData, fuelType: type})}
+                    onClick={() => setExtractedData({ ...extractedData, fuelType: type })}
                     className={`flex-1 py-3 rounded-xl border font-bold text-sm transition-all ${extractedData.fuelType === type ? 'bg-primary border-primary text-background-dark' : 'bg-surface-darker border-white/5 text-slate-400'}`}
                   >
                     {type === 'Diesel' ? t('station.diesel') : type === 'Sans Plomb' ? t('station.sansPlomb') : t('station.premium')}
@@ -142,19 +154,19 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel, onFall
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">{t('scanFlow.pricePerLiter')}</label>
               <div className="flex items-center gap-4">
-                <button 
+                <button
                   onClick={() => adjustPrice(-0.01)}
                   className="size-14 rounded-2xl bg-surface-darker border border-white/5 flex items-center justify-center text-primary active:scale-90 transition-all shadow-lg"
                 >
                   <span className="material-symbols-outlined !text-3xl font-black">remove</span>
                 </button>
-                
+
                 <div className="flex-1 relative">
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     step="0.01"
                     value={extractedData.price}
-                    onChange={(e) => setExtractedData({...extractedData, price: parseFloat(e.target.value) || 0})}
+                    onChange={(e) => setExtractedData({ ...extractedData, price: parseFloat(e.target.value) || 0 })}
                     className="w-full bg-surface-darker border-2 border-primary/30 rounded-2xl py-4 text-4xl font-extrabold text-white text-center focus:border-primary focus:ring-0 tabular-nums"
                   />
                   <div className="absolute -bottom-6 left-0 right-0 text-center">
@@ -162,14 +174,14 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel, onFall
                   </div>
                 </div>
 
-                <button 
+                <button
                   onClick={() => adjustPrice(0.01)}
                   className="size-14 rounded-2xl bg-surface-darker border border-white/5 flex items-center justify-center text-primary active:scale-90 transition-all shadow-lg"
                 >
                   <span className="material-symbols-outlined !text-3xl font-black">add</span>
                 </button>
               </div>
-              
+
               <div className="flex justify-center gap-3 mt-8">
                 {[-0.10, -0.05, 0.05, 0.10].map(val => (
                   <button
@@ -185,14 +197,14 @@ export const ScanFlow: React.FC<ScanFlowProps> = ({ onComplete, onCancel, onFall
           </div>
 
           <div className="space-y-4 pb-8">
-            <button 
+            <button
               onClick={() => onComplete(extractedData.price, extractedData.fuelType)}
               className="w-full h-16 bg-primary hover:bg-primary-dark text-background-dark font-bold text-xl rounded-2xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <span className="material-symbols-outlined">check_circle</span>
               {t('scanFlow.looksGood')}
             </button>
-            <button 
+            <button
               onClick={onFallback}
               className="w-full py-4 text-slate-500 font-bold hover:text-white transition-colors"
             >

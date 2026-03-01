@@ -44,9 +44,10 @@ export interface SubmitResult {
 /**
  * Submit a price report for an existing station.
  * Updates the station price, logs the report, and awards points to the user.
+ * Now using an atomic RPC for data integrity.
  */
 export async function submitPriceReport(params: SubmitPriceParams): Promise<SubmitResult> {
-    const { userId, stationId, fuelType, price, reportType, userName, userLevel } = params;
+    const { userId, stationId, fuelType, price, reportType, userLevel } = params;
 
     const pointsMap: Record<string, number> = {
         manual: POINTS.MANUAL_REPORT,
@@ -58,55 +59,20 @@ export async function submitPriceReport(params: SubmitPriceParams): Promise<Subm
     const pointsEarned = pointsMap[reportType] || POINTS.MANUAL_REPORT;
 
     try {
-        // 1. Update the station's prices and metadata
-        if (reportType !== 'confirm') {
-            // Build the updated prices object — we merge with existing
-            const { data: existingStation } = await supabase
-                .from('stations')
-                .select('prices')
-                .eq('id', stationId)
-                .single();
+        const { data, error } = await supabase.rpc('submit_price_report_rpc', {
+            p_user_id: userId,
+            p_station_id: stationId,
+            p_fuel_type: fuelType,
+            p_price: price,
+            p_report_type: reportType,
+            p_points_earned: pointsEarned,
+            p_user_level: userLevel || 1
+        });
 
-            const currentPrices = (existingStation?.prices as Record<string, number>) || {};
-            const updatedPrices = { ...currentPrices, [fuelType]: price };
-
-            const { error: stationError } = await supabase
-                .from('stations')
-                .update({
-                    prices: updatedPrices,
-                    last_updated: new Date().toISOString(),
-                    last_updated_timestamp: Date.now(),
-                    verified_by: userId,
-                    verified_by_level: userLevel || 1,
-                    is_ghost: false,
-                })
-                .eq('id', stationId);
-
-            if (stationError) {
-                console.error('Error updating station:', stationError);
-                return { success: false, pointsEarned: 0, error: stationError.message };
-            }
+        if (error) {
+            console.error('RPC Error submitting price report:', error);
+            return { success: false, pointsEarned: 0, error: error.message };
         }
-
-        // 2. Insert the price report record
-        const { error: reportError } = await supabase
-            .from('price_reports')
-            .insert({
-                user_id: userId,
-                station_id: stationId,
-                fuel_type: fuelType,
-                price: price,
-                report_type: reportType,
-                points_earned: pointsEarned,
-            });
-
-        if (reportError) {
-            console.error('Error inserting price report:', reportError);
-            // Don't fail the whole operation — the station price was already updated
-        }
-
-        // 3. Update the user's points, XP, and counts
-        await awardPoints(userId, pointsEarned, reportType);
 
         return { success: true, pointsEarned };
     } catch (err: any) {

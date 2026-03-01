@@ -1,38 +1,39 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 export async function extractFuelPriceFromImage(base64Image: string) {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: [
-        {
-          inlineData: {
-            mimeType: 'image/jpeg',
-            data: base64Image
-          }
-        },
-        {
-          text: "Extract the fuel prices and fuel types from this gas station pump or receipt. Look for price per liter in MAD/DH. Return JSON with 'price' and 'fuelType'."
-        }
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            price: { type: Type.NUMBER, description: "The price per liter extracted" },
-            fuelType: { type: Type.STRING, description: "The type of fuel identified" }
-          },
-          required: ["price", "fuelType"]
-        }
-      }
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const text = response.text;
-    if (text) {
-      return JSON.parse(text);
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          mimeType: "image/jpeg",
+          data: base64Image
+        }
+      },
+      {
+        text: `You are an expert fuel price analyst in Morocco. 
+        Analyze this image of a gas station price tower or pump display.
+        Extract the price per liter for the fuel types shown.
+        Focus on values typically ranging from 10.00 to 18.00 MAD.
+        Return ONLY a JSON object with:
+        - "price": number (the detected price per liter)
+        - "fuelType": string (one of: "Diesel", "Sans Plomb", "Premium")
+        
+        Example: {"price": 13.45, "fuelType": "Diesel"}
+        If multiple are shown, prioritize the most prominent or standard Diesel.`
+      }
+    ]);
+
+    const response = await result.response;
+    const text = response.text();
+    const jsonStr = text.match(/\{.*\}/s)?.[0];
+    if (jsonStr) {
+      return JSON.parse(jsonStr);
     }
   } catch (error) {
     console.error("Gemini OCR failed:", error);
@@ -41,10 +42,13 @@ export async function extractFuelPriceFromImage(base64Image: string) {
 }
 
 export async function processVoiceReport(prompt: string) {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: `Parse this voice input into fuel price data for Morocco: "${prompt}". Return JSON with keys: price, fuelType, stationName.`
-  });
-  return response.text;
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(`Parse this voice input into fuel price data for Morocco: "${prompt}". Return JSON with keys: price (number), fuelType (one of: Diesel, Sans Plomb, Premium), stationName.`);
+    const response = await result.response;
+    return response.text();
+  } catch (error) {
+    console.error("Gemini Voice processing failed:", error);
+    return null;
+  }
 }

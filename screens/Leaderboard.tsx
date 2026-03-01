@@ -36,7 +36,7 @@ export const Leaderboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           level: u.level || 1,
           points: u.total_points || 0,
           city: u.city || 'Morocco',
-          img: u.avatar_url || `https://i.pravatar.cc/100?u=${u.id}`
+          img: u.avatar_url && u.avatar_url.trim() !== '' ? u.avatar_url : `https://i.pravatar.cc/100?u=${u.id}`
         }));
         setGlobalRankings(formattedGlobal);
 
@@ -45,16 +45,13 @@ export const Leaderboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         setLocalRankings([...formattedGlobal].sort(() => 0.5 - Math.random()));
       }
 
-      // Fetch current user rank (simplified approach)
+      // Fetch current user rank via RPC
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // This is a naive way to get rank. Better done via an RPC function in Supabase.
-        const { count } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .gt('total_points', 0); // Assuming we somehow know the user's points
-
-        setUserRank(Math.floor(Math.random() * 50) + 1); // Mock until we have a real ranking function
+        const { data: rank, error: rankError } = await supabase.rpc('get_user_rank', { user_id: user.id });
+        if (!rankError) {
+          setUserRank(rank);
+        }
       }
     };
 
@@ -65,9 +62,9 @@ export const Leaderboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   // Podium Data based on tab
   const activeList = activeTab === 'local' ? localRankings : globalRankings;
-  const p1 = activeList[0] || { id: 'p1', name: '-', points: 0, img: '', level: 1, city: '' };
-  const p2 = activeList[1] || { id: 'p2', name: '-', points: 0, img: '', level: 1, city: '' };
-  const p3 = activeList[2] || { id: 'p3', name: '-', points: 0, img: '', level: 1, city: '' };
+  const p1 = activeList[0] || { id: 'p1', name: '-', points: 0, img: 'https://i.pravatar.cc/100?u=p1', level: 1, city: '' };
+  const p2 = activeList[1] || { id: 'p2', name: '-', points: 0, img: 'https://i.pravatar.cc/100?u=p2', level: 1, city: '' };
+  const p3 = activeList[2] || { id: 'p3', name: '-', points: 0, img: 'https://i.pravatar.cc/100?u=p3', level: 1, city: '' };
 
   return (
     <div className="flex flex-col h-full bg-background-dark animate-fadeIn">

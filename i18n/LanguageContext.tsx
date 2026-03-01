@@ -219,7 +219,7 @@ const en: Translations = {
     oilChange: 'Full Oil Change',
     progress: 'Progress',
     lifetimeSavings: 'Total Lifetime Savings',
-    savedThisMonth: 'Saved 45 MAD this month',
+    savedThisMonth: 'Saved this month: +{value} DH',
     active: 'Active',
     history: 'History',
     expiresSoon: 'Expires soon',
@@ -275,7 +275,14 @@ const en: Translations = {
     efficiencyTrend: 'Efficiency Trend',
     sixMonths: '6 Months',
     recentLogs: 'Recent Logs',
-    months: { may: 'May', aug: 'Aug', oct: 'Oct' }
+    months: { may: 'May', aug: 'Aug', oct: 'Oct' },
+    stationName: 'Station Name',
+    cost: 'Cost (DH)',
+    volume: 'Volume (L)',
+    odometer: 'Odometer (km)',
+    saveLog: 'Save Log',
+    saving: 'Saving...',
+    cancel: 'Cancel'
   },
   notifications: {
     title: 'Activity',
@@ -342,6 +349,18 @@ const en: Translations = {
     faceId: 'FaceID / Fingerprint',
     fastLogin: 'Fast login and reporting'
   },
+  auth: {
+    welcome: 'Welcome back',
+    create: 'Create an account',
+    email: 'Email',
+    password: 'Password',
+    signIn: 'Sign In',
+    signUp: 'Sign Up',
+    processing: 'Processing...',
+    noAccount: "Don't have an account? Sign Up",
+    hasAccount: "Already have an account? Sign In",
+    failed: 'Authentication failed'
+  }
 };
 
 const fr: Translations = {
@@ -557,7 +576,7 @@ const fr: Translations = {
     oilChange: 'Vidange Complète',
     progress: 'Progression',
     lifetimeSavings: 'Économies Totales',
-    savedThisMonth: '45 MAD économisés ce mois-ci',
+    savedThisMonth: 'Économisé ce mois: +{value} DH',
     active: 'Actifs',
     history: 'Historique',
     expiresSoon: 'Expire bientôt',
@@ -613,7 +632,14 @@ const fr: Translations = {
     efficiencyTrend: 'Tendance d\'efficacité',
     sixMonths: '6 Mois',
     recentLogs: 'Pleins Récents',
-    months: { may: 'Mai', aug: 'Aoû', oct: 'Oct' }
+    months: { may: 'Mai', aug: 'Aoû', oct: 'Oct' },
+    stationName: 'Nom de la station',
+    cost: 'Coût (DH)',
+    volume: 'Volume (L)',
+    odometer: 'Kilométrage (km)',
+    saveLog: 'Enregistrer',
+    saving: 'Enregistrement...',
+    cancel: 'Annuler'
   },
   notifications: {
     title: 'Activité',
@@ -680,6 +706,18 @@ const fr: Translations = {
     faceId: 'FaceID / Empreinte',
     fastLogin: 'Connexion et signalement rapides'
   },
+  auth: {
+    welcome: 'Bon retour',
+    create: 'Créer un compte',
+    email: 'E-mail',
+    password: 'Mot de passe',
+    signIn: 'Se connecter',
+    signUp: 'S\'inscrire',
+    processing: 'Traitement...',
+    noAccount: "Vous n'avez pas de compte ? S'inscrire",
+    hasAccount: "Vous avez déjà un compte ? Se connecter",
+    failed: 'L\'authentification a échoué'
+  }
 };
 
 const translations = { en, fr };
